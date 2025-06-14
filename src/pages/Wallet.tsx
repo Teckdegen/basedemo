@@ -14,12 +14,12 @@ const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, signOut, profile, loading } = useAuth();
-  const { holdings, trades } = useSupabaseData();
+  const { user, signOut, loading: authLoading } = useAuth();
+  const { holdings, trades, profile, loading: dataLoading } = useSupabaseData();
 
   // DEBUG LOGS: see what profile looks like
   React.useEffect(() => {
-    console.log('[DEBUG][Wallet] profile fetched from useAuth:', profile);
+    console.log('[DEBUG][Wallet] profile fetched from useSupabaseData:', profile);
   }, [profile]);
 
   // Only redirect if wallet is disconnected - let auth handle user state
@@ -67,6 +67,8 @@ const Wallet = () => {
     total: trade.total_base,
     timestamp: new Date(trade.created_at).getTime()
   }));
+
+  const loading = authLoading || dataLoading;
 
   // Show loading state while auth is loading or wallet not connected
   if (!isConnected || loading) {
