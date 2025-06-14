@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount } from 'wagmi';
@@ -11,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setUsername: (username: string) => Promise<{ error: any }>;
+  needsUsername: boolean;
 }
 
 interface UserProfile {
@@ -29,7 +31,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { address } = useAccount();
+  const [needsUsername, setNeedsUsername] = useState(false);
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     // Auth by wallet connect triggers Supabase session
@@ -72,6 +75,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // eslint-disable-next-line
   }, [user, address]);
 
+  // Check if username is needed when profile loads
+  useEffect(() => {
+    if (profile && isConnected && user) {
+      setNeedsUsername(!profile.username);
+    } else {
+      setNeedsUsername(false);
+    }
+  }, [profile, isConnected, user]);
+
   const refreshProfile = async () => {
     if (!user) return;
     setLoading(true);
@@ -107,6 +119,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setNeedsUsername(false);
   };
 
   return (
@@ -118,6 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signOut,
       refreshProfile,
       setUsername,
+      needsUsername,
     }}>
       {children}
     </AuthContext.Provider>

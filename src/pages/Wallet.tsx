@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +16,7 @@ const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, signOut, profile, loading } = useAuth();
+  const { user, signOut, profile, loading, needsUsername } = useAuth();
   const { holdings, trades } = useSupabaseData();
 
   useEffect(() => {
@@ -62,8 +63,9 @@ const Wallet = () => {
   if (!isConnected || !user || loading) {
     return null;
   }
-  // If no username yet, prompt
-  if (!profile?.username) {
+  
+  // Show username onboard if needed
+  if (needsUsername) {
     return <UsernameOnboard />;
   }
 

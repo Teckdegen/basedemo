@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +30,7 @@ const App = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, needsUsername } = useAuth();
   const { executeTrade, loading: dataLoading } = useSupabaseData();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
@@ -101,8 +102,9 @@ const App = () => {
   if (!isConnected || !user || loading) {
     return null;
   }
-  // Require username before accessing app
-  if (!profile?.username) {
+  
+  // Show username onboard if needed
+  if (needsUsername) {
     return <UsernameOnboard />;
   }
 

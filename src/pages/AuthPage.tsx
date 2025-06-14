@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
@@ -9,17 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AuthPage = () => {
   const { isConnected } = useAccount();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, needsUsername } = useAuth();
   const navigate = useNavigate();
-  const [showUsernameModal, setShowUsernameModal] = useState(false);
 
   useEffect(() => {
-    if (isConnected && user && !loading) {
-      if (!profile?.username) {
-        setShowUsernameModal(true);
-      } else {
-        navigate("/app");
-      }
+    if (isConnected && user && !loading && profile?.username) {
+      navigate("/app");
     }
   }, [isConnected, user, profile, loading, navigate]);
 
@@ -33,14 +28,14 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      {showUsernameModal && (
+      {needsUsername && (
         <UsernameOnboard onFinish={() => window.location.reload()} />
       )}
       <Card className="w-full max-w-md bg-black/40 backdrop-blur-md border-white/20 text-white">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardTitle className="text-2xl font-bold">Connect Wallet</CardTitle>
           <p className="text-gray-400">
-            Connect your wallet to start trading. You'll be asked to choose a username on your first login!
+            Connect your wallet to start trading. You'll be asked to choose a username after connecting!
           </p>
         </CardHeader>
         <CardContent>
