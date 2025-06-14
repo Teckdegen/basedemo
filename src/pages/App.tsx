@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -263,19 +262,13 @@ const App = () => {
                     )}
                     
                     {/* Trading Buttons */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex gap-3">
                       <Button 
                         onClick={handleBuy}
-                        className="h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold text-base"
+                        className="h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold text-base w-full"
                         disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || priceLoading || dataLoading}
                       >
                         {priceLoading || dataLoading ? 'Processing...' : 'Buy'}
-                      </Button>
-                      <Button 
-                        onClick={() => navigate(`/trade/${selectedToken.address}`)}
-                        className="h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold text-base"
-                      >
-                        Advanced Trade
                       </Button>
                     </div>
                   </div>
