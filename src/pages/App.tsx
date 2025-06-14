@@ -1,16 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import TokenScanner from '@/components/TokenScanner';
 import TokenChart from '@/components/TokenChart';
-import Portfolio from '@/components/Portfolio';
-import TradeHistory from '@/components/TradeHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Wallet } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -38,7 +36,7 @@ const App = () => {
   const { toast } = useToast();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
-  const [balance, setBalance] = useState(10); // Starting with 10 ETH
+  const [balance, setBalance] = useState(10);
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
@@ -78,12 +76,10 @@ const App = () => {
   const handleTokenSelect = (token: TokenData) => {
     setSelectedToken(token);
     
-    // Store token details for portfolio display
     const newTokenDetails = { ...tokenDetails };
     newTokenDetails[token.address] = token;
     setTokenDetails(newTokenDetails);
     
-    // Save immediately when token is selected
     saveUserData(balance, portfolio, trades, newTokenDetails);
   };
 
@@ -106,7 +102,6 @@ const App = () => {
     const newPortfolio = { ...portfolio };
     newPortfolio[selectedToken.address] = (newPortfolio[selectedToken.address] || 0) + amount;
     
-    // Ensure token details are preserved
     const newTokenDetails = { ...tokenDetails };
     newTokenDetails[selectedToken.address] = selectedToken;
     
@@ -161,7 +156,6 @@ const App = () => {
       delete newPortfolio[selectedToken.address];
     }
     
-    // Ensure token details are preserved
     const newTokenDetails = { ...tokenDetails };
     newTokenDetails[selectedToken.address] = selectedToken;
     
@@ -207,6 +201,15 @@ const App = () => {
           <span className="text-xl font-bold text-gray-900">Base Demo</span>
         </div>
         <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/wallet')}
+            className="flex items-center space-x-2"
+          >
+            <Wallet className="w-4 h-4" />
+            <span>My Wallet</span>
+          </Button>
           <div className="text-sm text-gray-600">
             Balance: <span className="font-semibold text-primary-800">{balance.toFixed(4)} ETH</span>
           </div>
@@ -215,9 +218,9 @@ const App = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Column - Token Scanner & Trading */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="space-y-6">
             <TokenScanner onTokenSelect={handleTokenSelect} />
             
             {selectedToken && (
@@ -279,16 +282,11 @@ const App = () => {
             )}
           </div>
 
-          {/* Right Column - Chart & Portfolio */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Right Column - Chart */}
+          <div className="space-y-6">
             {selectedToken && (
               <TokenChart tokenData={selectedToken} />
             )}
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              <Portfolio balance={balance} portfolio={portfolio} tokenDetails={tokenDetails} />
-              <TradeHistory trades={trades} />
-            </div>
           </div>
         </div>
       </div>
