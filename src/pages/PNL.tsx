@@ -7,9 +7,31 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ArrowLeft } from "lucide-react";
 
-const calculatePNL = (holdings, trades) => {
-  // Map: token address -> {symbol, name, buyAmounts, buyTotals, sellAmounts, sellTotals}
-  const tokenStats = {};
+interface TokenStats {
+  symbol: string;
+  name: string;
+  buyAmounts: number;
+  buyTotals: number;
+  sellAmounts: number;
+  sellTotals: number;
+  buyPrices: number[];
+  sellPrices: number[];
+}
+
+interface TokenPNL {
+  address: string;
+  symbol: string;
+  name: string;
+  avgBuy: number;
+  avgSell: number;
+  buyAmounts: number;
+  sellAmounts: number;
+  realizedPNL: number;
+}
+
+const calculatePNL = (holdings: any[], trades: any[]): TokenPNL[] => {
+  // Map: token address -> TokenStats
+  const tokenStats: Record<string, TokenStats> = {};
 
   trades.forEach((trade) => {
     const entry = tokenStats[trade.token_address] || {
@@ -22,6 +44,7 @@ const calculatePNL = (holdings, trades) => {
       buyPrices: [],
       sellPrices: [],
     };
+    
     if (trade.trade_type === "buy") {
       entry.buyAmounts += trade.amount;
       entry.buyTotals += trade.total_base;
@@ -35,12 +58,12 @@ const calculatePNL = (holdings, trades) => {
     tokenStats[trade.token_address] = entry;
   });
 
-  // Get average prices
+  // Get average prices and calculate PNL
   const tokens = Object.entries(tokenStats).map(([address, t]) => {
     const avgBuy = t.buyAmounts > 0 ? t.buyTotals / t.buyAmounts : 0;
     const avgSell = t.sellAmounts > 0 ? t.sellTotals / t.sellAmounts : 0;
     const realizedPNL = t.sellTotals - ((t.sellAmounts / (t.buyAmounts || 1)) * t.buyTotals);
-    // PNL is total earned from selling minus cost-basis of those sold tokens
+    
     return {
       address,
       symbol: t.symbol,

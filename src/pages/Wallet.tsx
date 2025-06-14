@@ -1,5 +1,3 @@
-
-
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Portfolio from '@/components/Portfolio';
 import TradeHistory from '@/components/TradeHistory';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw, LogOut } from 'lucide-react';
+import { ArrowLeft, RefreshCw, LogOut, TrendingUp } from 'lucide-react';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
@@ -163,4 +161,3 @@ const Wallet = () => {
 };
 
 export default Wallet;
-
