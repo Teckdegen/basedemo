@@ -1,29 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface TokenData {
   address: string;
@@ -38,109 +16,47 @@ interface TokenChartProps {
   tokenData: TokenData;
 }
 
+interface ChartDataPoint {
+  time: string;
+  price: number;
+}
+
 const TokenChart: React.FC<TokenChartProps> = ({ tokenData }) => {
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   useEffect(() => {
     // Generate mock price data for demonstration
-    const generateMockData = () => {
+    const generateMockData = (): ChartDataPoint[] => {
       const now = Date.now();
       const dataPoints = 50;
       const interval = 5 * 60 * 1000; // 5 minutes
       
-      const labels = [];
-      const prices = [];
+      const data: ChartDataPoint[] = [];
       let currentPrice = tokenData.price;
       
       for (let i = dataPoints; i >= 0; i--) {
         const timestamp = now - (i * interval);
-        labels.push(new Date(timestamp).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }));
         
         // Add some realistic price movement
         const change = (Math.random() - 0.5) * 0.1;
         currentPrice += currentPrice * change;
-        prices.push(currentPrice);
+        
+        data.push({
+          time: new Date(timestamp).toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          price: Math.max(0.001, currentPrice)
+        });
       }
       
-      return { labels, prices };
+      return data;
     };
 
-    const mockData = generateMockData();
-    
-    setChartData({
-      labels: mockData.labels,
-      datasets: [
-        {
-          label: `${tokenData.symbol} Price`,
-          data: mockData.prices,
-          borderColor: tokenData.priceChange24h >= 0 ? '#10B981' : '#EF4444',
-          backgroundColor: tokenData.priceChange24h >= 0 
-            ? 'rgba(16, 185, 129, 0.1)' 
-            : 'rgba(239, 68, 68, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-        },
-      ],
-    });
+    setChartData(generateMockData());
   }, [tokenData]);
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        titleColor: '#1F2937',
-        bodyColor: '#1F2937',
-        borderColor: '#E5E7EB',
-        borderWidth: 1,
-        callbacks: {
-          label: function(context: any) {
-            return `$${context.parsed.y.toFixed(6)}`;
-          }
-        }
-      },
-    },
-    interaction: {
-      mode: 'nearest' as const,
-      axis: 'x' as const,
-      intersect: false,
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: {
-          display: false,
-        },
-        ticks: {
-          maxTicksLimit: 8,
-        },
-      },
-      y: {
-        display: true,
-        position: 'right' as const,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
-        },
-        ticks: {
-          callback: function(value: any) {
-            return `$${value.toFixed(6)}`;
-          },
-        },
-      },
-    },
-  };
+  const formatPrice = (value: number) => `$${value.toFixed(6)}`;
 
   return (
     <Card>
@@ -160,8 +76,43 @@ const TokenChart: React.FC<TokenChartProps> = ({ tokenData }) => {
       </CardHeader>
       <CardContent>
         <div className="h-64">
-          {chartData ? (
-            <Line data={chartData} options={options} />
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 0, 0, 0.05)" />
+                <XAxis 
+                  dataKey="time" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis 
+                  orientation="right"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={formatPrice}
+                />
+                <Tooltip 
+                  formatter={(value: number) => [formatPrice(value), tokenData.symbol]}
+                  labelStyle={{ color: '#1F2937' }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke={tokenData.priceChange24h >= 0 ? '#10B981' : '#EF4444'}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-500">Loading chart data...</div>
