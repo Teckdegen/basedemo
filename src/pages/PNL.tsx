@@ -81,10 +81,10 @@ const calculatePNL = (holdings: any[], trades: any[]): TokenPNL[] => {
 
 const PNLPage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  const { holdings, trades } = useSupabaseData();
+  const { user } = useAuth();
+  const { profile, holdings, trades, loading } = useSupabaseData();
 
-  if (!profile) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
         <span className="text-xl text-white">Loading...</span>
