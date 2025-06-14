@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import TokenScanner from '@/components/TokenScanner';
 import TrendingTokens from '@/components/TrendingTokens';
-import AiChat from '@/components/AiChat';
+import { AiChat } from '@/components/AiChat';
 import { Button } from '@/components/ui/button';
 import { Wallet, User, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +18,7 @@ const TradingApp = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const [showUsernameOnboard, setShowUsernameOnboard] = useState(false);
+  const [selectedToken, setSelectedToken] = useState(null);
 
   useEffect(() => {
     if (!isConnected) {
@@ -35,6 +36,10 @@ const TradingApp = () => {
     setShowUsernameOnboard(false);
   };
 
+  const handleTokenSelect = (token: any) => {
+    setSelectedToken(token);
+  };
+
   if (!isConnected || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -44,7 +49,7 @@ const TradingApp = () => {
   }
 
   if (showUsernameOnboard) {
-    return <UsernameOnboard onComplete={handleUsernameSet} />;
+    return <UsernameOnboard onFinish={handleUsernameSet} />;
   }
 
   return (
@@ -92,13 +97,13 @@ const TradingApp = () => {
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Left Column - Token Scanner and Trending */}
           <div className={`space-y-8 ${isMobile ? '' : 'lg:col-span-2'}`}>
-            <TokenScanner />
-            <TrendingTokens />
+            <TokenScanner onTokenSelect={handleTokenSelect} />
+            <TrendingTokens onTokenSelect={handleTokenSelect} />
           </div>
           
           {/* Right Column - AI Chat */}
           <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
-            <AiChat />
+            <AiChat selectedToken={selectedToken} />
           </div>
         </div>
       </div>
