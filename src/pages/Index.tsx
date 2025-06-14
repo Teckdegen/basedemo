@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
@@ -77,9 +76,9 @@ const Index = () => {
                         onClick={() => navigate('/app')}
                         size="lg"
                         className="gradient-bg text-white px-8 py-4 text-lg font-semibold hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
-                        disabled={!user}
+                        // Button is always enabled if connected, and label is static
                       >
-                        {user ? 'Go to Trading App' : 'Loading...'}
+                        Go to Trading App
                       </Button>
                     )}
                   </div>
