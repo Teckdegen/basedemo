@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -11,6 +10,11 @@ import { Wallet, User, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import UsernameOnboard from '@/components/UsernameOnboard';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 const TradingApp = () => {
   const navigate = useNavigate();
@@ -19,6 +23,7 @@ const TradingApp = () => {
   const isMobile = useIsMobile();
   const [showUsernameOnboard, setShowUsernameOnboard] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   useEffect(() => {
     if (!isConnected) {
@@ -99,11 +104,30 @@ const TradingApp = () => {
             <TokenScanner onTokenSelect={handleTokenSelect} />
             <TrendingTokens onTokenSelect={handleTokenSelect} />
           </div>
+          
           {/* Right Column - AI Chat */}
+          {/* On desktop, show chat in panel; on mobile, show a button that opens dialog */}
           <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
-            {/* Ensure Dialog context is included for any dialog pieces */}
-            {/* Example: if AiChat or any direct children use DialogClose, make sure to wrap in Dialog */}
-            <AiChat selectedToken={selectedToken} />
+            {isMobile ? (
+              <>
+                <Dialog open={aiChatOpen} onOpenChange={setAiChatOpen}>
+                  <DialogTrigger asChild>
+                    <button
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg font-semibold mb-4"
+                    >
+                      Open AI Chat
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="p-0 max-w-lg w-full max-h-[80vh] flex flex-col">
+                    <AiChat selectedToken={selectedToken} />
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : (
+              <div className="h-full">
+                <AiChat selectedToken={selectedToken} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -112,4 +136,3 @@ const TradingApp = () => {
 };
 
 export default TradingApp;
-
