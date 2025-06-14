@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Search, TrendingUp, Shield, Zap, AlertTriangle } from 'lucide-react';
+import { Search, TrendingUp, Shield, Zap, AlertTriangle, Bot, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TokenData {
   address: string;
@@ -24,6 +25,8 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
   const [tokenAddress, setTokenAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [scannedToken, setScannedToken] = useState<TokenData | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [analyzingToken, setAnalyzingToken] = useState(false);
   const { toast } = useToast();
 
   const fetchTokenData = async (address: string): Promise<TokenData> => {
@@ -70,6 +73,42 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
     }
   };
 
+  const getTokenAnalysis = async (tokenData: TokenData) => {
+    setAnalyzingToken(true);
+    try {
+      const analysisPrompt = `Analyze this token for investment potential:
+Token: ${tokenData.name} (${tokenData.symbol})
+Price: $${tokenData.price}
+24h Change: ${tokenData.priceChange24h}%
+Contract: ${tokenData.address}
+
+Provide a brief 100-word analysis covering potential risks, opportunities, and overall assessment for this token investment.`;
+
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { prompt: analysisPrompt },
+      });
+
+      if (error) throw error;
+      
+      if (data.error) throw new Error(data.error);
+
+      setAiAnalysis(data.response);
+      toast({
+        title: "Analysis Complete",
+        description: "AI has analyzed the token data"
+      });
+    } catch (error) {
+      console.error('Error getting AI analysis:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Could not get AI analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzingToken(false);
+    }
+  };
+
   const validateAndFetchToken = async () => {
     if (!tokenAddress.trim()) {
       toast({
@@ -97,6 +136,7 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
       const tokenData = await fetchTokenData(tokenAddress.trim());
       
       setScannedToken(tokenData);
+      setAiAnalysis(null); // Reset previous analysis
       toast({
         title: "Token Verified",
         description: `${tokenData.symbol} ready for trading`
@@ -132,6 +172,7 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
   const resetScanner = () => {
     setScannedToken(null);
     setTokenAddress('');
+    setAiAnalysis(null);
   };
 
   return (
@@ -238,6 +279,40 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
                     <AlertTriangle className="w-5 h-5 text-yellow-400" />
                     <span className="text-yellow-400 text-sm font-medium">Price data unavailable - proceed with caution</span>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* AI Analysis Section */}
+            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6 rounded-2xl border border-purple-500/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center">
+                  <Bot className="w-5 h-5 mr-2 text-purple-400" />
+                  AI Analysis
+                </h3>
+                <Button
+                  onClick={() => getTokenAnalysis(scannedToken)}
+                  disabled={analyzingToken}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-sm"
+                >
+                  {analyzingToken ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Analyzing...</span>
+                    </div>
+                  ) : (
+                    'Get AI Analysis'
+                  )}
+                </Button>
+              </div>
+
+              {aiAnalysis ? (
+                <div className="bg-black/30 p-4 rounded-xl">
+                  <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{aiAnalysis}</p>
+                </div>
+              ) : (
+                <div className="bg-black/30 p-4 rounded-xl">
+                  <p className="text-gray-400 text-sm italic">Click "Get AI Analysis" to receive an investment analysis for this token.</p>
                 </div>
               )}
             </div>
