@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
-import userImg from "/photo-1721322800607-8c38375eef04"; // Use the user's uploaded image
+// Removed faulty image import here
 
 import { WalletCard } from "@/components/ui/WalletCard"; // Our new card component
 
@@ -102,7 +103,7 @@ const Wallet = () => {
         </Button>
         {/* Avatar image, using uploaded */}
         <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden border-2 border-cyan-400/70 shadow-lg bg-gradient-to-tr from-cyan-600 to-blue-900 mr-1">
-          <img src={userImg} alt="Profile" className="object-cover h-full w-full" />
+          <img src="/photo-1721322800607-8c38375eef04" alt="Profile" className="object-cover h-full w-full" />
         </div>
         {/* Title */}
         <span className="text-2xl font-black text-white leading-tight drop-shadow">Wallet</span>
