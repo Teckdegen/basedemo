@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -116,6 +115,15 @@ const Wallet = () => {
         >
           <TrendingUp className="w-4 h-4" />
           <span className="hidden md:inline-block">View PNL</span>
+        </Button>
+        {/* Bounties link */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/bounties')}
+          className="flex items-center gap-2 text-cyan-400 hover:bg-white/10 rounded-xl px-2"
+        >
+          <span className="hidden md:inline-block">Bounties</span>
         </Button>
         {/* Spacer */}
         <div className="flex-1" />

@@ -9,6 +9,90 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bounties: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: string | null
+          entry_price: number
+          id: string
+          mystery_prize: string | null
+          start_time: string | null
+          title: string
+          winner_wallet: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_time?: string | null
+          entry_price: number
+          id?: string
+          mystery_prize?: string | null
+          start_time?: string | null
+          title: string
+          winner_wallet?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_time?: string | null
+          entry_price?: number
+          id?: string
+          mystery_prize?: string | null
+          start_time?: string | null
+          title?: string
+          winner_wallet?: string | null
+        }
+        Relationships: []
+      }
+      bounty_entries: {
+        Row: {
+          bounty_id: string | null
+          created_at: string
+          id: string
+          paid: boolean | null
+          tx_hash: string | null
+          user_id: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          bounty_id?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          bounty_id?: string | null
+          created_at?: string
+          id?: string
+          paid?: boolean | null
+          tx_hash?: string | null
+          user_id?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bounty_entries_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bounty_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           base_balance: number | null

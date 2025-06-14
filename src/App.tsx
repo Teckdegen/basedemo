@@ -11,6 +11,7 @@ import Wallet from "./pages/Wallet";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
 import PNLPage from "./pages/PNL";
+import BountiesPage from "./pages/Bounties";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
+              <Route path="/bounties" element={<BountiesPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
