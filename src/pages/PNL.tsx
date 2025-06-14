@@ -4,7 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowLeft } from "lucide-react";
+import { TrendingUp, ArrowLeft, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TokenStats {
   symbol: string;
@@ -83,7 +86,31 @@ const PNLPage: React.FC = () => {
   const { user } = useAuth();
   const { profile, holdings, trades, loading } = useSupabaseData();
 
-  // Show loading only while data is actually loading
+  const tokens = calculatePNL(holdings, trades);
+
+  const { data: aiSummary, isLoading: isSummaryLoading } = useQuery({
+    queryKey: ['pnlSummary', tokens.map(t => t.address)],
+    queryFn: async () => {
+      if (tokens.length === 0) {
+        return "Start trading to get an AI-powered summary of your performance!";
+      }
+
+      const { data, error } = await supabase.functions.invoke('pnl-summary', {
+        body: { pnlData: tokens },
+      });
+
+      if (error) {
+        console.error("Error fetching AI summary:", error);
+        return 'Could not generate AI summary at this time. Please try again later.';
+      }
+
+      return data.summary;
+    },
+    enabled: !loading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -91,8 +118,6 @@ const PNLPage: React.FC = () => {
       </div>
     );
   }
-
-  const tokens = calculatePNL(holdings, trades);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -127,6 +152,28 @@ const PNLPage: React.FC = () => {
       </nav>
 
       <div className="max-w-3xl mx-auto p-4 sm:p-8">
+        <Card className="mb-6 bg-gradient-to-br from-purple-900/50 to-blue-900/50 border-purple-400/20 text-white">
+            <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-2xl">
+                    <Sparkles className="w-6 h-6 text-purple-400" />
+                    <span>AI Performance Summary</span>
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isSummaryLoading ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-full bg-slate-700" />
+                        <Skeleton className="h-4 w-full bg-slate-700" />
+                        <Skeleton className="h-4 w-3/4 bg-slate-700" />
+                    </div>
+                ) : (
+                    <p className="text-slate-300 whitespace-pre-line">
+                        {aiSummary}
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+      
         <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 text-white">
           <CardHeader>
             <CardTitle className="text-lg sm:text-2xl">Token-wise Profit &amp; Loss</CardTitle>
