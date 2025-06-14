@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -10,13 +9,14 @@ import { ArrowLeft, RefreshCw, LogOut } from 'lucide-react';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
+import UsernameOnboard from "@/components/UsernameOnboard";
 
 const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, signOut } = useAuth();
-  const { profile, holdings, trades, loading: dataLoading } = useSupabaseData();
+  const { user, signOut, profile, loading } = useAuth();
+  const { holdings, trades } = useSupabaseData();
 
   useEffect(() => {
     if (!isConnected || !user) {
@@ -59,8 +59,12 @@ const Wallet = () => {
     timestamp: new Date(trade.created_at).getTime()
   }));
 
-  if (!isConnected || !user) {
+  if (!isConnected || !user || loading) {
     return null;
+  }
+  // If no username yet, prompt
+  if (!profile?.username) {
+    return <UsernameOnboard />;
   }
 
   return (

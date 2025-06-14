@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useBasePrice } from '@/hooks/useBasePrice';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from "@/hooks/useAuth";
+import UsernameOnboard from "@/components/UsernameOnboard";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Wallet, Menu, RefreshCw, LogOut } from 'lucide-react';
 
@@ -28,8 +28,8 @@ const App = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, signOut } = useAuth();
-  const { profile, executeTrade, loading: dataLoading } = useSupabaseData();
+  const { user, profile, loading } = useAuth();
+  const { executeTrade, loading: dataLoading } = useSupabaseData();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
 
@@ -97,8 +97,12 @@ const App = () => {
     navigate('/');
   };
 
-  if (!isConnected || !user) {
+  if (!isConnected || !user || loading) {
     return null;
+  }
+  // Require username before accessing app
+  if (!profile?.username) {
+    return <UsernameOnboard />;
   }
 
   return (
