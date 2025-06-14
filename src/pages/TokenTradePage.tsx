@@ -24,7 +24,7 @@ const TokenTradePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, holdings, executeTrade, loading: dataLoading } = useSupabaseData();
-  const { priceData: basePrice, refreshPrice } = useBasePrice();
+  const { priceData: basePrice, forceRefresh: refreshBasePrice } = useBasePrice();
   const { toast } = useToast();
   
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
@@ -60,7 +60,6 @@ const TokenTradePage = () => {
   const handleTrade = async (type: 'buy' | 'sell') => {
     if (!tokenData || !profile || !tradeAmount) return;
 
-    await refreshPrice();
     const amount = parseFloat(tradeAmount);
     const pricePerToken = tokenData.price / basePrice.usd;
     const totalBase = amount * pricePerToken;
@@ -93,7 +92,11 @@ const TokenTradePage = () => {
         amount,
         pricePerToken,
         totalBase,
-        basePrice.usd
+        basePrice.usd,
+        async () => {
+          // Refresh prices after trade
+          await refreshBasePrice();
+        }
       );
 
       if (error) {

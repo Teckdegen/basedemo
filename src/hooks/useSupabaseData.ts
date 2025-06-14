@@ -132,7 +132,8 @@ export const useSupabaseData = () => {
     amount: number,
     pricePerToken: number,
     totalBase: number,
-    basePriceUsd: number
+    basePriceUsd: number,
+    onPriceRefresh?: () => Promise<void>
   ) => {
     if (!user || !profile) return;
 
@@ -205,6 +206,13 @@ export const useSupabaseData = () => {
 
       // Refresh data
       await fetchUserData();
+      
+      // Trigger price refresh if callback provided
+      if (onPriceRefresh) {
+        console.log('Refreshing prices after trade execution...');
+        await onPriceRefresh();
+      }
+      
       return { data: tradeData, error: null };
     } catch (error) {
       console.error('Error executing trade:', error);
