@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,7 @@ import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useToast } from '@/hooks/use-toast';
 import TokenChart from '@/components/TokenChart';
+import TradeSummary from '@/components/TradeSummary';
 
 interface TokenData {
   address: string;
@@ -17,6 +17,22 @@ interface TokenData {
   symbol: string;
   price: number;
   priceChange24h: number;
+}
+
+interface TradeSummaryData {
+  tokenSymbol: string;
+  tokenName: string;
+  tradeType: 'buy' | 'sell';
+  amount: number;
+  pricePerToken: number;
+  totalBase: number;
+  basePrice: number;
+  totalInvested?: number;
+  totalReceived?: number;
+  realizedPnL?: number;
+  realizedPnLPercent?: number;
+  remainingAmount?: number;
+  avgBuyPrice?: number;
 }
 
 const TokenTradePage = () => {
@@ -32,6 +48,8 @@ const TokenTradePage = () => {
   const [tokenAmount, setTokenAmount] = useState('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [loading, setLoading] = useState(false);
+  const [showTradeSummary, setShowTradeSummary] = useState(false);
+  const [tradeSummaryData, setTradeSummaryData] = useState<TradeSummaryData | null>(null);
 
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
 
@@ -112,6 +130,25 @@ const TokenTradePage = () => {
 
     setLoading(true);
     try {
+      // Calculate P&L data for sells
+      let pnlData = {};
+      if (tradeType === 'sell' && currentHolding) {
+        const proportionSold = tokensToTrade / currentHolding.amount;
+        const investedInSoldTokens = currentHolding.total_invested * proportionSold;
+        const realizedPnL = baseToSpend - investedInSoldTokens;
+        const realizedPnLPercent = investedInSoldTokens > 0 ? (realizedPnL / investedInSoldTokens) * 100 : 0;
+        const remainingAmount = currentHolding.amount - tokensToTrade;
+        
+        pnlData = {
+          totalInvested: investedInSoldTokens,
+          totalReceived: baseToSpend,
+          realizedPnL,
+          realizedPnLPercent,
+          remainingAmount: remainingAmount > 0.000001 ? remainingAmount : 0,
+          avgBuyPrice: currentHolding.average_buy_price
+        };
+      }
+
       const { error } = await executeTrade(
         tokenData.address,
         tokenData.symbol,
@@ -134,10 +171,20 @@ const TokenTradePage = () => {
           variant: "destructive"
         });
       } else {
-        toast({
-          title: "Trade Executed",
-          description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tokensToTrade.toFixed(6)} ${tokenData.symbol} for ${baseToSpend.toFixed(6)} BASE`,
-        });
+        // Prepare trade summary data
+        const summaryData: TradeSummaryData = {
+          tokenSymbol: tokenData.symbol,
+          tokenName: tokenData.name,
+          tradeType,
+          amount: tokensToTrade,
+          pricePerToken,
+          totalBase: baseToSpend,
+          basePrice: basePrice.usd,
+          ...pnlData
+        };
+
+        setTradeSummaryData(summaryData);
+        setShowTradeSummary(true);
         setBaseAmount('');
         setTokenAmount('');
       }
@@ -150,6 +197,16 @@ const TokenTradePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseTradeSummary = () => {
+    setShowTradeSummary(false);
+    setTradeSummaryData(null);
+  };
+
+  const handleViewPnL = () => {
+    setShowTradeSummary(false);
+    navigate('/pnl');
   };
 
   if (!tokenData) {
@@ -384,6 +441,15 @@ const TokenTradePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Trade Summary Modal */}
+      {showTradeSummary && tradeSummaryData && (
+        <TradeSummary
+          tradeData={tradeSummaryData}
+          onClose={handleCloseTradeSummary}
+          onViewPnL={handleViewPnL}
+        />
+      )}
     </div>
   );
 };
