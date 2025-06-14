@@ -20,7 +20,7 @@ const Wallet = () => {
 
   useEffect(() => {
     if (!isConnected || !user) {
-      navigate('/auth');
+      navigate('/');
     }
   }, [isConnected, user, navigate]);
 

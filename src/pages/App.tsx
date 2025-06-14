@@ -35,7 +35,7 @@ const App = () => {
 
   useEffect(() => {
     if (!isConnected || !user) {
-      navigate('/auth');
+      navigate('/');
     }
   }, [isConnected, user, navigate]);
 

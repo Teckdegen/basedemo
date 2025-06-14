@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
@@ -29,13 +28,6 @@ const Index = () => {
           <span className="text-xl font-bold text-gray-900">Base Demo</span>
         </div>
         <div className="flex items-center space-x-4">
-          <Button
-            onClick={() => navigate('/auth')}
-            variant="outline"
-            className="hidden sm:flex"
-          >
-            Sign In
-          </Button>
           <ConnectButton />
         </div>
       </nav>
@@ -81,11 +73,11 @@ const Index = () => {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => navigate('/auth')}
+                        onClick={() => navigate('/app')}
                         size="lg"
                         className="gradient-bg text-white px-8 py-4 text-lg font-semibold hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                       >
-                        Sign In / Sign Up
+                        Go to Trading App
                       </Button>
                     )}
                   </div>

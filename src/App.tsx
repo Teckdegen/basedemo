@@ -9,7 +9,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import TradingApp from "./pages/App";
 import Wallet from "./pages/Wallet";
-import AuthPage from "./pages/AuthPage";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
 
@@ -25,7 +24,6 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
               <Route path="/app" element={<TradingApp />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
