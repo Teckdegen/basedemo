@@ -10,13 +10,12 @@ import { ArrowLeft, RefreshCw, LogOut } from 'lucide-react';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import UsernameOnboard from "@/components/UsernameOnboard";
 
 const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, signOut, profile, loading, needsUsername } = useAuth();
+  const { user, signOut, profile, loading } = useAuth();
   const { holdings, trades } = useSupabaseData();
 
   useEffect(() => {
@@ -62,11 +61,6 @@ const Wallet = () => {
 
   if (!isConnected || !user || loading) {
     return null;
-  }
-  
-  // Show username onboard if needed
-  if (needsUsername) {
-    return <UsernameOnboard />;
   }
 
   return (

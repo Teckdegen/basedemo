@@ -4,19 +4,18 @@ import { useNavigate } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useAuth } from "@/hooks/useAuth";
-import UsernameOnboard from "@/components/UsernameOnboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AuthPage = () => {
   const { isConnected } = useAccount();
-  const { user, profile, loading, needsUsername } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isConnected && user && !loading && profile?.username) {
+    if (isConnected && user && !loading) {
       navigate("/app");
     }
-  }, [isConnected, user, profile, loading, navigate]);
+  }, [isConnected, user, loading, navigate]);
 
   if (loading) {
     return (
@@ -28,14 +27,11 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      {needsUsername && (
-        <UsernameOnboard onFinish={() => window.location.reload()} />
-      )}
       <Card className="w-full max-w-md bg-black/40 backdrop-blur-md border-white/20 text-white">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Connect Wallet</CardTitle>
           <p className="text-gray-400">
-            Connect your wallet to start trading. You'll be asked to choose a username after connecting!
+            Connect your wallet to start trading on Base DEX!
           </p>
         </CardHeader>
         <CardContent>
