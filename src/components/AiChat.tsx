@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, User, Send, Loader2, RefreshCcw } from 'lucide-react';
+import { Bot, User, Send, Loader2, RefreshCcw, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { DrawerClose } from "@/components/ui/drawer";
 
 interface TokenData {
   address: string;
@@ -116,12 +117,19 @@ export const AiChat = ({ selectedToken }: AiChatProps) => {
           </h2>
           <p className="text-sm text-slate-400">Powered by Gemini</p>
         </div>
-        {messages.length > 1 && (
-            <Button variant="ghost" size="sm" onClick={handleClearHistory} className="text-slate-400 hover:text-white hover:bg-slate-700">
-                <RefreshCcw className="w-4 h-4 mr-2" />
-                Clear
-            </Button>
-        )}
+        <div className="flex items-center space-x-2">
+            {messages.length > 1 && (
+                <Button variant="ghost" size="sm" onClick={handleClearHistory} className="text-slate-400 hover:text-white hover:bg-slate-700">
+                    <RefreshCcw className="w-4 h-4 mr-2" />
+                    Clear
+                </Button>
+            )}
+            <DrawerClose asChild>
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-700 h-9 w-9">
+                  <X className="w-4 h-4" />
+                </Button>
+            </DrawerClose>
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
