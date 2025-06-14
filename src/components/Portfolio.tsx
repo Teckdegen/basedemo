@@ -2,22 +2,30 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface TokenData {
+  address: string;
+  name: string;
+  symbol: string;
+  price: number;
+  priceChange24h: number;
+}
+
 interface PortfolioProps {
   balance: number;
   portfolio: Record<string, number>;
+  tokenDetails: Record<string, TokenData>;
 }
 
-const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio }) => {
+const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails }) => {
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
   
-  // Mock current prices for portfolio calculation
-  const mockPrices: Record<string, number> = {};
-  portfolioEntries.forEach(([address, _]) => {
-    mockPrices[address] = Math.random() * 10 + 0.1;
-  });
-
+  // Calculate portfolio value using actual token data
   const totalPortfolioValue = portfolioEntries.reduce((total, [address, amount]) => {
-    return total + (amount * (mockPrices[address] || 0));
+    const tokenData = tokenDetails[address];
+    if (tokenData) {
+      return total + (amount * tokenData.price);
+    }
+    return total;
   }, 0);
 
   const totalValue = balance + totalPortfolioValue;
@@ -71,18 +79,38 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio }) => {
           ) : (
             <div className="space-y-2">
               {portfolioEntries.map(([address, amount]) => {
-                const currentPrice = mockPrices[address] || 0;
-                const value = amount * currentPrice;
+                const tokenData = tokenDetails[address];
+                
+                if (!tokenData) {
+                  return (
+                    <div key={address} className="flex justify-between items-center p-3 bg-white border rounded-lg">
+                      <div>
+                        <div className="font-medium">Unknown Token</div>
+                        <div className="text-sm text-gray-600">{amount.toFixed(6)} tokens</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">Unknown Value</div>
+                        <div className="text-sm text-gray-600">Price unavailable</div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                const value = amount * tokenData.price;
                 
                 return (
                   <div key={address} className="flex justify-between items-center p-3 bg-white border rounded-lg">
                     <div>
-                      <div className="font-medium">DEMO</div>
+                      <div className="font-medium">{tokenData.symbol}</div>
+                      <div className="text-xs text-gray-500 mb-1">{tokenData.name}</div>
                       <div className="text-sm text-gray-600">{amount.toFixed(6)} tokens</div>
                     </div>
                     <div className="text-right">
                       <div className="font-medium">{value.toFixed(4)} ETH</div>
-                      <div className="text-sm text-gray-600">${currentPrice.toFixed(6)}</div>
+                      <div className="text-sm text-gray-600">${tokenData.price.toFixed(6)}</div>
+                      <div className={`text-xs ${tokenData.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {tokenData.priceChange24h >= 0 ? '+' : ''}{tokenData.priceChange24h.toFixed(2)}% (24h)
+                      </div>
                     </div>
                   </div>
                 );

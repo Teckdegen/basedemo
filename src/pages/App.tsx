@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +40,7 @@ const App = () => {
   const [balance, setBalance] = useState(10); // Starting with 10 ETH
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
 
   useEffect(() => {
     if (!isConnected) {
@@ -57,18 +57,37 @@ const App = () => {
         setBalance(data.balance || 10);
         setPortfolio(data.portfolio || {});
         setTrades(data.trades || []);
+        setTokenDetails(data.tokenDetails || {});
       }
     }
   }, [address]);
 
-  const saveUserData = (newBalance: number, newPortfolio: Record<string, number>, newTrades: Trade[]) => {
+  const saveUserData = (newBalance: number, newPortfolio: Record<string, number>, newTrades: Trade[], newTokenDetails: Record<string, TokenData>) => {
     if (address) {
       const data = {
         balance: newBalance,
         portfolio: newPortfolio,
-        trades: newTrades
+        trades: newTrades,
+        tokenDetails: newTokenDetails
       };
       localStorage.setItem(`baseDemo_${address}`, JSON.stringify(data));
+    }
+  };
+
+  const handleTokenSelect = (token: TokenData) => {
+    setSelectedToken(token);
+    
+    // Store token details for portfolio display
+    const newTokenDetails = { ...tokenDetails };
+    newTokenDetails[token.address] = token;
+    setTokenDetails(newTokenDetails);
+    
+    if (address) {
+      const savedData = localStorage.getItem(`baseDemo_${address}`);
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        saveUserData(data.balance || balance, data.portfolio || portfolio, data.trades || trades, newTokenDetails);
+      }
     }
   };
 
@@ -109,7 +128,7 @@ const App = () => {
     setTrades(newTrades);
     setTradeAmount('');
     
-    saveUserData(newBalance, newPortfolio, newTrades);
+    saveUserData(newBalance, newPortfolio, newTrades, tokenDetails);
     
     toast({
       title: "Trade Executed",
@@ -159,7 +178,7 @@ const App = () => {
     setTrades(newTrades);
     setTradeAmount('');
     
-    saveUserData(newBalance, newPortfolio, newTrades);
+    saveUserData(newBalance, newPortfolio, newTrades, tokenDetails);
     
     toast({
       title: "Trade Executed",
@@ -193,7 +212,7 @@ const App = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Token Scanner & Trading */}
           <div className="lg:col-span-1 space-y-6">
-            <TokenScanner onTokenSelect={setSelectedToken} />
+            <TokenScanner onTokenSelect={handleTokenSelect} />
             
             {selectedToken && (
               <Card>
@@ -261,7 +280,7 @@ const App = () => {
             )}
             
             <div className="grid md:grid-cols-2 gap-6">
-              <Portfolio balance={balance} portfolio={portfolio} />
+              <Portfolio balance={balance} portfolio={portfolio} tokenDetails={tokenDetails} />
               <TradeHistory trades={trades} />
             </div>
           </div>
