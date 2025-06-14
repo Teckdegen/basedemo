@@ -30,6 +30,10 @@ const Wallet = () => {
     navigate('/');
   };
 
+  const handleRefreshPrice = () => {
+    refreshPrice(true);
+  };
+
   // Convert holdings to legacy format for Portfolio component
   const portfolioData = holdings.reduce((acc, holding) => {
     acc[holding.token_address] = holding.amount;
@@ -103,7 +107,7 @@ const Wallet = () => {
                   BASE: ${basePrice.usd.toFixed(2)}
                 </span>
                 <button 
-                  onClick={refreshPrice} 
+                  onClick={handleRefreshPrice} 
                   disabled={priceLoading}
                   className="text-white/60 hover:text-white transition-colors"
                 >

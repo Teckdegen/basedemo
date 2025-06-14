@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -96,6 +97,10 @@ const App = () => {
     navigate('/');
   };
 
+  const handleRefreshPrice = () => {
+    refreshPrice(true);
+  };
+
   if (!isConnected || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -130,7 +135,7 @@ const App = () => {
                   BASE: ${basePrice.usd.toFixed(2)}
                 </span>
                 <button 
-                  onClick={refreshPrice} 
+                  onClick={handleRefreshPrice} 
                   disabled={priceLoading}
                   className="text-white/60 hover:text-white transition-colors"
                 >
@@ -188,7 +193,7 @@ const App = () => {
                 ${basePrice.usd.toFixed(2)}
               </span>
               <button 
-                onClick={refreshPrice} 
+                onClick={handleRefreshPrice} 
                 disabled={priceLoading}
                 className="text-white/60 hover:text-white transition-colors"
               >
