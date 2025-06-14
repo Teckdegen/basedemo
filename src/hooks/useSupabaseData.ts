@@ -59,66 +59,95 @@ export const useSupabaseData = () => {
 
     setLoading(true);
     try {
-      // Fetch profile
+      console.log('Fetching profile for user:', user.id);
+      
+      // Fetch profile with better error handling
       let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
+      console.log('Profile query result:', { profileData, profileError });
+
       // If no profile exists, create one
       if (!profileData && !profileError) {
         console.log('No profile found, creating new profile for user:', user.id);
+        
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: user.id,
-            base_balance: 1.0
+            base_balance: 1.0,
+            wallet_address: null
           })
           .select()
           .single();
 
         if (insertError) {
           console.error('Error creating profile:', insertError);
+          // Try to fetch again in case it was created by another process
+          const { data: retryProfile, error: retryError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (retryProfile && !retryError) {
+            profileData = retryProfile;
+            console.log('Found existing profile on retry:', retryProfile);
+          }
         } else {
           profileData = newProfile;
           console.log('Created new profile:', newProfile);
         }
       }
 
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
+
       if (profileData) {
         setProfile(profileData);
-        console.log('Profile loaded:', profileData);
+        console.log('Profile set:', profileData);
+      } else {
+        console.error('No profile data available after all attempts');
       }
 
       // Fetch holdings
-      const { data: holdingsData } = await supabase
+      const { data: holdingsData, error: holdingsError } = await supabase
         .from('user_holdings')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (holdingsData) {
+      if (holdingsError) {
+        console.error('Error fetching holdings:', holdingsError);
+      } else if (holdingsData) {
         setHoldings(holdingsData);
+        console.log('Holdings set:', holdingsData);
       }
 
       // Fetch trades
-      const { data: tradesData } = await supabase
+      const { data: tradesData, error: tradesError } = await supabase
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (tradesData) {
+      if (tradesError) {
+        console.error('Error fetching trades:', tradesError);
+      } else if (tradesData) {
         // Type assertion to ensure trade_type is properly typed
         const typedTrades = tradesData.map(trade => ({
           ...trade,
           trade_type: trade.trade_type as 'buy' | 'sell'
         }));
         setTrades(typedTrades);
+        console.log('Trades set:', typedTrades);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('Error in fetchUserData:', error);
     } finally {
       setLoading(false);
     }
