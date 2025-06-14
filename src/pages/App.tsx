@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -82,13 +83,8 @@ const App = () => {
     newTokenDetails[token.address] = token;
     setTokenDetails(newTokenDetails);
     
-    if (address) {
-      const savedData = localStorage.getItem(`baseDemo_${address}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        saveUserData(data.balance || balance, data.portfolio || portfolio, data.trades || trades, newTokenDetails);
-      }
-    }
+    // Save immediately when token is selected
+    saveUserData(balance, portfolio, trades, newTokenDetails);
   };
 
   const handleBuy = () => {
@@ -110,6 +106,10 @@ const App = () => {
     const newPortfolio = { ...portfolio };
     newPortfolio[selectedToken.address] = (newPortfolio[selectedToken.address] || 0) + amount;
     
+    // Ensure token details are preserved
+    const newTokenDetails = { ...tokenDetails };
+    newTokenDetails[selectedToken.address] = selectedToken;
+    
     const newTrade: Trade = {
       id: Date.now().toString(),
       tokenAddress: selectedToken.address,
@@ -126,9 +126,10 @@ const App = () => {
     setBalance(newBalance);
     setPortfolio(newPortfolio);
     setTrades(newTrades);
+    setTokenDetails(newTokenDetails);
     setTradeAmount('');
     
-    saveUserData(newBalance, newPortfolio, newTrades, tokenDetails);
+    saveUserData(newBalance, newPortfolio, newTrades, newTokenDetails);
     
     toast({
       title: "Trade Executed",
@@ -160,6 +161,10 @@ const App = () => {
       delete newPortfolio[selectedToken.address];
     }
     
+    // Ensure token details are preserved
+    const newTokenDetails = { ...tokenDetails };
+    newTokenDetails[selectedToken.address] = selectedToken;
+    
     const newTrade: Trade = {
       id: Date.now().toString(),
       tokenAddress: selectedToken.address,
@@ -176,9 +181,10 @@ const App = () => {
     setBalance(newBalance);
     setPortfolio(newPortfolio);
     setTrades(newTrades);
+    setTokenDetails(newTokenDetails);
     setTradeAmount('');
     
-    saveUserData(newBalance, newPortfolio, newTrades, tokenDetails);
+    saveUserData(newBalance, newPortfolio, newTrades, newTokenDetails);
     
     toast({
       title: "Trade Executed",
