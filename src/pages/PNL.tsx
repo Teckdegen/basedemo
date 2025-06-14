@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,7 +83,8 @@ const PNLPage: React.FC = () => {
   const { user } = useAuth();
   const { profile, holdings, trades, loading } = useSupabaseData();
 
-  if (!user || loading) {
+  // Show loading only while data is actually loading
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
         <span className="text-xl text-white">Loading...</span>
