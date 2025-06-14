@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -92,7 +91,6 @@ const BountiesPage = () => {
   const { bounties, loading: bountiesLoading, fetchBounties } = useBounties();
   const [creating, setCreating] = useState(false);
 
-  // Bounty Creation (for admin wallet only)
   const [form, setForm] = useState<{ title: string; description: string; entry_price: number }>({
     title: "",
     description: "",
@@ -120,7 +118,6 @@ const BountiesPage = () => {
     setCreating(false);
   };
 
-  // Join bounty logic
   const handleJoinBounty = async (bounty: Bounty) => {
     if (!profile) {
       toast({ title: "Sign in to join bounty" });
@@ -188,7 +185,7 @@ const BountiesPage = () => {
               value={form.entry_price}
               onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
             />
-            <Button type="submit" loading={creating} disabled={creating}>
+            <Button type="submit" disabled={creating}>
               {creating ? "Creating..." : "Create Bounty"}
             </Button>
           </form>
@@ -208,6 +205,7 @@ const BountiesPage = () => {
                 userId={profile?.id}
                 adminWallet={ADMIN_WALLET}
                 onJoin={() => handleJoinBounty(bounty)}
+                onDetail={() => navigate(`/bounties/${bounty.id}`)}
               />
             ))}
           </div>
@@ -221,19 +219,21 @@ function BountyCard({
   bounty,
   userId,
   adminWallet,
-  onJoin
+  onJoin,
+  onDetail,
 }: {
   bounty: Bounty;
   userId?: string;
   adminWallet: string;
   onJoin: () => void;
+  onDetail: () => void;
 }) {
   const { entries, loading, fetchEntries } = useBountyEntries(bounty.id);
   const alreadyJoined = !!entries.find(e => e.user_id === userId);
 
   return (
     <div className="bg-slate-800/80 rounded-xl border border-cyan-400/10 p-4 shadow-xl">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={onDetail}>
         <span className="block text-xl font-semibold text-cyan-200">{bounty.title}</span>
         <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">{bounty.entry_price} BASE</span>
       </div>
