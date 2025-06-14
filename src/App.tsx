@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Web3Provider } from "@/providers/Web3Provider";
 import Index from "./pages/Index";
-import App as TradingApp from "./pages/App";
+import TradingApp from "./pages/App";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
