@@ -61,14 +61,35 @@ export const useSupabaseData = () => {
     setLoading(true);
     try {
       // Fetch profile
-      const { data: profileData } = await supabase
+      let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      // If no profile exists, create one
+      if (!profileData && !profileError) {
+        console.log('No profile found, creating new profile for user:', user.id);
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            base_balance: 1.0
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        } else {
+          profileData = newProfile;
+          console.log('Created new profile:', newProfile);
+        }
+      }
 
       if (profileData) {
         setProfile(profileData);
+        console.log('Profile loaded:', profileData);
       }
 
       // Fetch holdings
