@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -177,7 +178,7 @@ const App = () => {
             <div className="hidden md:flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                 <span className="text-cyan-400 text-sm font-medium">
-                  {profile?.base_balance.toFixed(4) || '0.0000'} BASE
+                  Balance: {profile?.base_balance ? Number(profile.base_balance).toFixed(4) : '1.0000'} BASE
                 </span>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
@@ -235,7 +236,7 @@ const App = () => {
           <div className="md:hidden pb-3 flex items-center space-x-3">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
               <span className="text-cyan-400 text-sm font-medium">
-                Balance: {profile?.base_balance.toFixed(4) || '0.0000'} BASE
+                Balance: {profile?.base_balance ? Number(profile.base_balance).toFixed(4) : '1.0000'} BASE
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-2 flex items-center space-x-2">
