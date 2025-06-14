@@ -3,20 +3,50 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, User, Send, Loader2 } from 'lucide-react';
+import { Bot, User, Send, Loader2, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+interface TokenData {
+  address: string;
+  name: string;
+  symbol: string;
+  price: number;
+  priceChange24h: number;
+  pairAddress?: string;
+}
 
 interface Message {
   role: 'user' | 'model';
   content: string;
 }
 
-export const AiChat = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }
-  ]);
+interface AiChatProps {
+  selectedToken?: TokenData | null;
+}
+
+export const AiChat = ({ selectedToken }: AiChatProps) => {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const savedMessages = localStorage.getItem('ai-chat-history');
+      if (savedMessages) {
+        return JSON.parse(savedMessages);
+      }
+    } catch (error) {
+      console.error('Failed to parse chat history from localStorage', error);
+    }
+    return [{ role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }];
+  });
+  
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai-chat-history', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Failed to save chat history to localStorage', error);
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -31,21 +61,18 @@ export const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (messageContent: string) => {
+    if (!messageContent.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: messageContent };
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
-    setInput('');
     setIsLoading(true);
     
     scrollToBottom();
 
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { prompt: currentInput },
+        body: { prompt: messageContent },
       });
 
       if (error) throw error;
@@ -63,17 +90,41 @@ export const AiChat = () => {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage(input);
+      setInput('');
+    }
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    sendMessage(prompt);
+  };
+
+  const handleClearHistory = () => {
+    setMessages([{ role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }]);
+  };
+
   return (
     <div className="flex flex-col h-[70vh] bg-slate-900/80 backdrop-blur-sm rounded-t-lg">
-      <div className="p-4 border-b border-slate-700">
-        <h2 className="text-lg font-semibold text-white flex items-center">
-          <Bot className="w-5 h-5 mr-2 text-cyan-400" />
-          AI Trading Assistant
-        </h2>
-        <p className="text-sm text-slate-400">Powered by Gemini</p>
+      <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold text-white flex items-center">
+            <Bot className="w-5 h-5 mr-2 text-cyan-400" />
+            AI Trading Assistant
+          </h2>
+          <p className="text-sm text-slate-400">Powered by Gemini</p>
+        </div>
+        {messages.length > 1 && (
+            <Button variant="ghost" size="sm" onClick={handleClearHistory} className="text-slate-400 hover:text-white hover:bg-slate-700">
+                <RefreshCcw className="w-4 h-4 mr-2" />
+                Clear
+            </Button>
+        )}
       </div>
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
               {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center"><Bot className="w-5 h-5 text-cyan-400" /></div>}
@@ -92,6 +143,21 @@ export const AiChat = () => {
             </div>
           )}
         </div>
+         {messages.length <= 1 && (
+            <div className="p-4 pt-0">
+                <p className="text-sm text-slate-400 mb-3">Or try one of these suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What are some trending tokens right now?")}>Trending tokens?</Button>
+                    {selectedToken && (
+                        <>
+                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`Tell me about ${selectedToken.name} (${selectedToken.symbol})`)}>Analyze {selectedToken.symbol}</Button>
+                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`What's the market sentiment for ${selectedToken.name}?`)}>Sentiment for {selectedToken.symbol}?</Button>
+                        </>
+                    )}
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("How can I analyze my portfolio?")}>Analyze my portfolio</Button>
+                </div>
+            </div>
+        )}
       </ScrollArea>
       <div className="p-4 border-t border-slate-700">
         <form onSubmit={handleSubmit} className="flex gap-2">

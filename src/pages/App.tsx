@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -311,7 +310,7 @@ const App = () => {
         </DrawerTrigger>
         <DrawerContent className="bg-transparent border-none">
           <div className="max-w-2xl mx-auto">
-            <AiChat />
+            <AiChat selectedToken={selectedToken} />
           </div>
         </DrawerContent>
       </Drawer>
