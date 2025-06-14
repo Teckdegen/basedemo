@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -61,7 +62,7 @@ export const useSupabaseData = () => {
     try {
       console.log('Fetching profile for user:', user.id);
       
-      // Fetch profile with better error handling
+      // First, try to fetch existing profile
       let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -70,7 +71,7 @@ export const useSupabaseData = () => {
 
       console.log('Profile query result:', { profileData, profileError });
 
-      // If no profile exists, create one
+      // If no profile exists and no error, create one
       if (!profileData && !profileError) {
         console.log('No profile found, creating new profile for user:', user.id);
         
@@ -86,32 +87,52 @@ export const useSupabaseData = () => {
 
         if (insertError) {
           console.error('Error creating profile:', insertError);
-          // Try to fetch again in case it was created by another process
-          const { data: retryProfile, error: retryError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
           
-          if (retryProfile && !retryError) {
-            profileData = retryProfile;
-            console.log('Found existing profile on retry:', retryProfile);
+          // If insert failed due to unique constraint, try to fetch again
+          if (insertError.code === '23505') {
+            console.log('Profile might exist, trying to fetch again...');
+            const { data: retryProfile, error: retryError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            if (retryProfile && !retryError) {
+              profileData = retryProfile;
+              console.log('Found existing profile on retry:', retryProfile);
+            } else {
+              console.error('Still unable to fetch profile:', retryError);
+            }
           }
         } else {
           profileData = newProfile;
-          console.log('Created new profile:', newProfile);
+          console.log('Created new profile successfully:', newProfile);
         }
-      }
-
-      if (profileError) {
+      } else if (profileError) {
         console.error('Error fetching profile:', profileError);
       }
 
+      // Ensure we have a valid profile
       if (profileData) {
-        setProfile(profileData);
-        console.log('Profile set:', profileData);
+        // Make sure base_balance is a number and has a default value
+        const validProfile = {
+          ...profileData,
+          base_balance: profileData.base_balance ? Number(profileData.base_balance) : 1.0
+        };
+        setProfile(validProfile);
+        console.log('Profile set successfully:', validProfile);
       } else {
         console.error('No profile data available after all attempts');
+        // Create a fallback profile in state only
+        const fallbackProfile = {
+          id: user.id,
+          wallet_address: null,
+          base_balance: 1.0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setProfile(fallbackProfile);
+        console.log('Using fallback profile:', fallbackProfile);
       }
 
       // Fetch holdings
@@ -138,7 +159,6 @@ export const useSupabaseData = () => {
       if (tradesError) {
         console.error('Error fetching trades:', tradesError);
       } else if (tradesData) {
-        // Type assertion to ensure trade_type is properly typed
         const typedTrades = tradesData.map(trade => ({
           ...trade,
           trade_type: trade.trade_type as 'buy' | 'sell'
@@ -148,6 +168,18 @@ export const useSupabaseData = () => {
       }
     } catch (error) {
       console.error('Error in fetchUserData:', error);
+      // Even on error, ensure we have a fallback profile
+      if (user && !profile) {
+        const fallbackProfile = {
+          id: user.id,
+          wallet_address: null,
+          base_balance: 1.0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setProfile(fallbackProfile);
+        console.log('Using error fallback profile:', fallbackProfile);
+      }
     } finally {
       setLoading(false);
     }
@@ -165,7 +197,13 @@ export const useSupabaseData = () => {
         .single();
 
       if (error) throw error;
-      if (data) setProfile(data);
+      if (data) {
+        const validProfile = {
+          ...data,
+          base_balance: data.base_balance ? Number(data.base_balance) : 1.0
+        };
+        setProfile(validProfile);
+      }
       return { data, error: null };
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -184,9 +222,22 @@ export const useSupabaseData = () => {
     basePriceUsd: number,
     onPriceRefresh?: () => Promise<void>
   ) => {
-    if (!user || !profile) return;
+    if (!user || !profile) {
+      console.error('Cannot execute trade: missing user or profile');
+      return { data: null, error: 'Missing user or profile' };
+    }
 
     try {
+      console.log('Executing trade:', {
+        tokenAddress,
+        tokenSymbol,
+        tradeType,
+        amount,
+        pricePerToken,
+        totalBase,
+        currentBalance: profile.base_balance
+      });
+
       // Insert trade record
       const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
@@ -203,7 +254,12 @@ export const useSupabaseData = () => {
         .select()
         .single();
 
-      if (tradeError) throw tradeError;
+      if (tradeError) {
+        console.error('Trade insert error:', tradeError);
+        throw tradeError;
+      }
+
+      console.log('Trade inserted successfully:', tradeData);
 
       // Update or insert holding
       const existingHolding = holdings.find(h => h.token_address === tokenAddress);
@@ -213,7 +269,7 @@ export const useSupabaseData = () => {
         const newTotalInvested = (existingHolding?.total_invested || 0) + totalBase;
         const newAverageBuyPrice = newAmount > 0 ? newTotalInvested / newAmount : 0;
 
-        await supabase
+        const { error: holdingError } = await supabase
           .from('user_holdings')
           .upsert({
             user_id: user.id,
@@ -225,31 +281,60 @@ export const useSupabaseData = () => {
             total_invested: newTotalInvested
           }, { onConflict: 'user_id, token_address' });
 
+        if (holdingError) {
+          console.error('Holding upsert error:', holdingError);
+          throw holdingError;
+        }
+
         // Update profile balance
-        await updateProfile({ base_balance: profile.base_balance - totalBase });
+        const newBalance = profile.base_balance - totalBase;
+        console.log('Updating balance from', profile.base_balance, 'to', newBalance);
+        
+        const { error: balanceError } = await updateProfile({ base_balance: newBalance });
+        if (balanceError) {
+          console.error('Balance update error:', balanceError);
+          throw balanceError;
+        }
       } else {
         if (existingHolding) {
           const newAmount = existingHolding.amount - amount;
           const proportionSold = amount / existingHolding.amount;
           const newTotalInvested = existingHolding.total_invested * (1 - proportionSold);
 
-          if (newAmount <= 0.000001) { // Use a small epsilon for float comparison
-            await supabase
+          if (newAmount <= 0.000001) {
+            const { error: deleteError } = await supabase
               .from('user_holdings')
               .delete()
               .eq('id', existingHolding.id);
+            
+            if (deleteError) {
+              console.error('Holding delete error:', deleteError);
+              throw deleteError;
+            }
           } else {
-            await supabase
+            const { error: updateError } = await supabase
               .from('user_holdings')
               .update({
                 amount: newAmount,
                 total_invested: newTotalInvested
               })
               .eq('id', existingHolding.id);
+            
+            if (updateError) {
+              console.error('Holding update error:', updateError);
+              throw updateError;
+            }
           }
 
           // Update profile balance
-          await updateProfile({ base_balance: profile.base_balance + totalBase });
+          const newBalance = profile.base_balance + totalBase;
+          console.log('Updating balance from', profile.base_balance, 'to', newBalance);
+          
+          const { error: balanceError } = await updateProfile({ base_balance: newBalance });
+          if (balanceError) {
+            console.error('Balance update error:', balanceError);
+            throw balanceError;
+          }
         }
       }
 
