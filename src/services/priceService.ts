@@ -1,4 +1,3 @@
-
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
 export interface PriceData {
@@ -15,49 +14,34 @@ const priceCache = new Map<string, TokenPriceData>();
 const CACHE_DURATION = 300000; // 5 minutes cache (300 seconds)
 
 export const fetchBasePrice = async (): Promise<PriceData> => {
-  // Check cache first for BASE price
-  const cached = priceCache.get('base-protocol');
-  const now = Date.now();
-  
-  if (cached && (now - cached.lastUpdated) < CACHE_DURATION) {
-    console.log('Using cached BASE price:', cached);
-    return {
-      usd: cached.usd,
-      usd_24h_change: cached.usd_24h_change
-    };
-  }
-
+  // Never use cache (for demo correctness)
   try {
-    // Use consistent source - base-protocol token
+    // Fetch from CoinGecko every time for most accurate result
     const response = await fetch(
       `${COINGECKO_API_BASE}/simple/price?ids=base-protocol&vs_currencies=usd&include_24hr_change=true`
     );
-    
     if (response.ok) {
       const data = await response.json();
       if (data['base-protocol']?.usd) {
         const priceData = {
           usd: data['base-protocol'].usd,
           usd_24h_change: data['base-protocol'].usd_24h_change || 0,
-          lastUpdated: now
+          lastUpdated: Date.now()
         };
-        
-        // Cache the result
+        // Update cache in case you want to use it later
         priceCache.set('base-protocol', priceData);
         console.log('BASE price fetched and cached:', priceData);
-        
         return {
           usd: priceData.usd,
           usd_24h_change: priceData.usd_24h_change
         };
       }
     }
-    
     throw new Error('Failed to fetch BASE price from primary source');
   } catch (error) {
     console.error('Error fetching BASE price:', error);
-    
-    // Return cached data if available, otherwise fallback
+    // Fallback: use cache if available
+    const cached = priceCache.get('base-protocol');
     if (cached) {
       console.log('Using expired cached BASE price due to error:', cached);
       return {
@@ -65,15 +49,13 @@ export const fetchBasePrice = async (): Promise<PriceData> => {
         usd_24h_change: cached.usd_24h_change
       };
     }
-    
-    // Consistent fallback price
+    // Static fallback value
     const fallbackPrice = {
       usd: 0.27,
       usd_24h_change: 0,
-      lastUpdated: now
+      lastUpdated: Date.now()
     };
     priceCache.set('base-protocol', fallbackPrice);
-    
     return {
       usd: fallbackPrice.usd,
       usd_24h_change: fallbackPrice.usd_24h_change

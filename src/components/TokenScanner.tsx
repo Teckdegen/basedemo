@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,8 @@ interface TokenData {
   price: number;
   priceChange24h: number;
   pairAddress?: string;
+  marketCap?: number | null;
+  dex?: string | null;
 }
 
 interface TokenScannerProps {
@@ -31,44 +32,37 @@ const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
 
   const fetchTokenData = async (address: string): Promise<TokenData> => {
     try {
-      // First try to get basic token info from a DEX aggregator API
+      // Always fetch fresh data for more accurate results
       const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
-      
-      if (!response.ok) {
-        throw new Error('Token not found');
-      }
-      
+      if (!response.ok) throw new Error('Token not found');
       const data = await response.json();
-      console.log('API Response:', data);
-      
-      if (!data.pairs || data.pairs.length === 0) {
-        throw new Error('No trading pairs found for this token');
-      }
-      
-      // Get the most liquid pair (highest volume)
-      const bestPair = data.pairs.reduce((best: any, current: any) => {
-        const bestVolume = parseFloat(best.volume?.h24 || '0');
-        const currentVolume = parseFloat(current.volume?.h24 || '0');
-        return currentVolume > bestVolume ? current : best;
-      });
-      
-      const tokenInfo = bestPair.baseToken.address.toLowerCase() === address.toLowerCase() 
-        ? bestPair.baseToken 
+      if (!data.pairs || data.pairs.length === 0) throw new Error('No trading pairs found for this token');
+      // Best pair = highest liquidity
+      const bestPair = data.pairs.reduce((best: any, current: any) =>
+        (parseFloat(current.liquidity?.usd || '0') > parseFloat(best.liquidity?.usd || '0')) ? current : best
+      );
+      const tokenInfo = bestPair.baseToken.address.toLowerCase() === address.toLowerCase()
+        ? bestPair.baseToken
         : bestPair.quoteToken;
-      
+
+      // Market cap and DEX logic
+      const marketCap = bestPair.marketCap || null;
+      const dex = bestPair.dexId
+        ? bestPair.dexId.charAt(0).toUpperCase() + bestPair.dexId.slice(1)
+        : null;
+
       return {
         address: address,
         name: tokenInfo.name || 'Unknown Token',
         symbol: tokenInfo.symbol || 'UNKNOWN',
         price: parseFloat(bestPair.priceUsd || '0'),
         priceChange24h: parseFloat(bestPair.priceChange?.h24 || '0'),
-        pairAddress: bestPair.pairAddress
+        pairAddress: bestPair.pairAddress,
+        marketCap,
+        dex
       };
     } catch (error) {
       console.error('Error fetching from DexScreener:', error);
-      
-      // Fallback: Try to get basic token info from another source or use contract calls
-      // For now, we'll throw the error to show it to the user
       throw new Error('Unable to fetch token data. Please verify the contract address.');
     }
   };
@@ -244,7 +238,7 @@ Provide a brief 100-word analysis covering potential risks, opportunities, and o
                   ✓ Active
                 </Badge>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="bg-white/5 p-4 rounded-xl">
                   <span className="text-sm text-gray-400 block mb-1">Token Name</span>
@@ -266,13 +260,26 @@ Provide a brief 100-word analysis covering potential risks, opportunities, and o
                     {scannedToken.priceChange24h >= 0 ? '+' : ''}{scannedToken.priceChange24h.toFixed(2)}%
                   </p>
                 </div>
+
+                {/* Market Cap */}
+                <div className="bg-white/5 p-4 rounded-xl col-span-1 sm:col-span-2">
+                  <span className="text-sm text-gray-400 block mb-1">Market Cap</span>
+                  <p className="font-bold text-white text-lg">
+                    {scannedToken.marketCap ? `$${Number(scannedToken.marketCap).toLocaleString()}` : 'N/A'}
+                  </p>
+                </div>
+                {/* DEX */}
+                <div className="bg-white/5 p-4 rounded-xl col-span-1 sm:col-span-2">
+                  <span className="text-sm text-gray-400 block mb-1">DEX</span>
+                  <p className="font-bold text-white text-lg">
+                    {scannedToken.dex || 'N/A'}
+                  </p>
+                </div>
               </div>
-              
               <div className="bg-gray-900/80 p-4 rounded-xl">
                 <span className="text-sm text-gray-400 block mb-2">Contract Address</span>
                 <p className="font-mono text-sm text-gray-200 break-all">{scannedToken.address}</p>
               </div>
-              
               {scannedToken.price === 0 && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl mt-4">
                   <div className="flex items-center space-x-2">
@@ -282,7 +289,6 @@ Provide a brief 100-word analysis covering potential risks, opportunities, and o
                 </div>
               )}
             </div>
-
             {/* AI Analysis Section */}
             <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6 rounded-2xl border border-purple-500/20">
               <div className="flex items-center justify-between mb-4">
