@@ -7,13 +7,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Web3Provider } from "@/providers/Web3Provider";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import TradingApp from "./pages/App";        // this is the trading interface page
+import TradingApp from "./pages/TradingApp";   // Renamed!
 import Wallet from "./pages/Wallet";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
 import PNLPage from "./pages/PNL";
 import BountiesPage from "./pages/Bounties";
-import BountyDetailPage from "./pages/BountyDetailPage"; // New
+import BountyDetailPage from "./pages/BountyDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +32,7 @@ const App = () => (
               <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
               <Route path="/bounties" element={<BountiesPage />} />
-              <Route path="/bounties/:bountyId" element={<BountyDetailPage />} /> {/* Single bounty page */}
+              <Route path="/bounties/:bountyId" element={<BountyDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
@@ -43,3 +43,4 @@ const App = () => (
 );
 
 export default App;
+
