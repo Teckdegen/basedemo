@@ -106,6 +106,15 @@ const Wallet = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/pnl')}
+                className="flex items-center space-x-2 text-white hover:bg-white/10"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>View PNL</span>
+              </Button>
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                 <span className="text-cyan-400 text-sm font-medium">
                   Balance: {profile?.base_balance.toFixed(4) || '0.0000'} BASE

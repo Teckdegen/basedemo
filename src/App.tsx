@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import TradingApp from "./pages/App";
 import Wallet from "./pages/Wallet";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
+import PNLPage from "./pages/PNL";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +26,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/app" element={<TradingApp />} />
               <Route path="/wallet" element={<Wallet />} />
+              <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
