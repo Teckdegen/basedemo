@@ -186,7 +186,7 @@ const BountiesPage = () => {
               onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
             />
             <Button type="submit" disabled={creating}>
-              Create Bounty
+              {creating ? "Creating..." : "Create Bounty"}
             </Button>
           </form>
         )}
