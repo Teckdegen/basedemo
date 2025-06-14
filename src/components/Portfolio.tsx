@@ -25,7 +25,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
   const navigate = useNavigate();
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
 
-  // Calculate portfolio value using actual token data and BASE price
+  // Calculate the total value of user tokens (excluding base balance)
   const totalPortfolioValue = portfolioEntries.reduce((total, [address, amount]) => {
     const tokenData = tokenDetails[address];
     if (tokenData) {
@@ -34,11 +34,17 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
     return total;
   }, 0);
 
-  // CHANGED LINE: starting balance is now 1.0, not 10.0
-  const pnl = (balance + totalPortfolioValue) - 1.0; // Starting balance was 1.0 BASE
-  const pnlPercentage = (pnl / 1.0) * 100;
+  // Correct: actual starting balance from the backend, or fallback to 1.0
+  // If the user has NO trades and totalBalance is close to the starting balance, PNL is zero!
+  const startingBase = 1.0;
 
+  // Ownership: total base including held tokens
   const totalValue = balance + totalPortfolioValue;
+
+  // If no trades/tokens, don't show a negative one. Show zero PNL.
+  const isBrandNewUser = totalValue.toFixed(4) === startingBase.toFixed(4) && portfolioEntries.length === 0;
+  const pnl = isBrandNewUser ? 0 : (totalValue - startingBase);
+  const pnlPercentage = isBrandNewUser ? 0 : (pnl / startingBase) * 100;
 
   const handleTokenClick = (address: string) => {
     if (onTokenClick) {
@@ -74,10 +80,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
             <div className="text-center space-y-2 sm:space-y-3">
               <div className="text-sm text-slate-400 font-medium">Total Portfolio Value</div>
               <div className="text-2xl sm:text-4xl font-bold text-white">{totalValue.toFixed(4)} BASE</div>
-              <div className="text-slate-300">${(totalValue * basePrice).toLocaleString()} USD</div>
+              <div className="text-slate-300">${(totalValue * basePrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</div>
               <div className={`text-base sm:text-lg font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} BASE ({pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
               </div>
+              {isBrandNewUser && (
+                <div className="mt-2 text-xs text-cyan-400">Welcome! Your account is funded with 1.0 BASE to get started.</div>
+              )}
             </div>
           </div>
 
@@ -95,7 +104,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
               </div>
               <div className="text-right">
                 <div className="font-bold text-white text-base sm:text-lg">{balance.toFixed(4)} BASE</div>
-                <div className="text-sm text-slate-400">${(balance * basePrice).toLocaleString()}</div>
+                <div className="text-sm text-slate-400">${(balance * basePrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               </div>
             </div>
           </div>
@@ -116,7 +125,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
               <div className="w-12 sm:w-16 h-12 sm:h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Wallet className="w-6 sm:w-8 h-6 sm:h-8 text-slate-400" />
               </div>
-              <div className="text-slate-300 font-medium mb-2">No tokens yet</div>
+              <div className="text-slate-300 font-medium mb-2">
+                {isBrandNewUser
+                  ? "No tokens yet! Get started by trading your free 1.0 BASE."
+                  : "No tokens yet"}
+              </div>
               <div className="text-sm text-slate-500 mb-4 sm:mb-6">Start trading to build your portfolio</div>
               <Button
                 onClick={() => navigate('/app')}
@@ -129,7 +142,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
             <div className="space-y-3">
               {portfolioEntries.map(([address, amount]) => {
                 const tokenData = tokenDetails[address];
-                
+
                 if (!tokenData) {
                   return (
                     <div 
@@ -155,10 +168,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
                     </div>
                   );
                 }
-                
+
                 const valueInBase = amount * tokenData.price / basePrice;
                 const tokenInitials = tokenData.symbol.substring(0, 2).toUpperCase();
-                
+
                 return (
                   <div 
                     key={address} 
@@ -195,3 +208,4 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
 };
 
 export default Portfolio;
+
