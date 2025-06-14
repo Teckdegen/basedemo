@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +5,8 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Portfolio from '@/components/Portfolio';
 import TradeHistory from '@/components/TradeHistory';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { useBasePrice } from '@/hooks/useBasePrice';
 
 interface TokenData {
   address: string;
@@ -31,6 +31,7 @@ interface Trade {
 const Wallet = () => {
   const { isConnected, address } = useAccount();
   const navigate = useNavigate();
+  const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
   const [balance, setBalance] = useState(10);
   const [portfolio, setPortfolio] = useState<Record<string, number>>({});
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -89,6 +90,18 @@ const Wallet = () => {
                   Balance: {balance.toFixed(4)} BASE
                 </span>
               </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
+                <span className="text-green-400 text-sm font-medium">
+                  BASE: ${basePrice.usd.toFixed(2)}
+                </span>
+                <button 
+                  onClick={refreshPrice} 
+                  disabled={priceLoading}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${priceLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
               <ConnectButton />
             </div>
           </div>
@@ -97,7 +110,12 @@ const Wallet = () => {
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid lg:grid-cols-2 gap-6">
-          <Portfolio balance={balance} portfolio={portfolio} tokenDetails={tokenDetails} />
+          <Portfolio 
+            balance={balance} 
+            portfolio={portfolio} 
+            tokenDetails={tokenDetails}
+            basePrice={basePrice.usd}
+          />
           <TradeHistory trades={trades} />
         </div>
       </div>

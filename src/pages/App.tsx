@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Menu } from 'lucide-react';
+import { useBasePrice } from '@/hooks/useBasePrice';
+import { Wallet, Menu, RefreshCw } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -35,6 +35,7 @@ const App = () => {
   const { isConnected, address } = useAccount();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
   const [balance, setBalance] = useState(10);
@@ -84,16 +85,20 @@ const App = () => {
     saveUserData(balance, portfolio, trades, newTokenDetails);
   };
 
-  const handleBuy = () => {
+  const handleBuy = async () => {
     if (!selectedToken || !tradeAmount) return;
     
+    // Refresh BASE price before trade
+    await refreshPrice();
+    
     const amount = parseFloat(tradeAmount);
-    const total = amount * selectedToken.price;
+    const tokenPriceInBase = selectedToken.price / basePrice.usd;
+    const total = amount * tokenPriceInBase;
     
     if (total > balance) {
       toast({
         title: "Insufficient Balance",
-        description: "You don't have enough ETH for this trade",
+        description: "You don't have enough BASE for this trade",
         variant: "destructive"
       });
       return;
@@ -112,7 +117,7 @@ const App = () => {
       tokenSymbol: selectedToken.symbol,
       type: 'buy',
       amount,
-      price: selectedToken.price,
+      price: tokenPriceInBase,
       total,
       timestamp: Date.now()
     };
@@ -129,12 +134,15 @@ const App = () => {
     
     toast({
       title: "Trade Executed",
-      description: `Bought ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} ETH`
+      description: `Bought ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
     });
   };
 
-  const handleSell = () => {
+  const handleSell = async () => {
     if (!selectedToken || !tradeAmount) return;
+    
+    // Refresh BASE price before trade
+    await refreshPrice();
     
     const amount = parseFloat(tradeAmount);
     const currentHolding = portfolio[selectedToken.address] || 0;
@@ -148,7 +156,8 @@ const App = () => {
       return;
     }
 
-    const total = amount * selectedToken.price;
+    const tokenPriceInBase = selectedToken.price / basePrice.usd;
+    const total = amount * tokenPriceInBase;
     const newBalance = balance + total;
     const newPortfolio = { ...portfolio };
     newPortfolio[selectedToken.address] = currentHolding - amount;
@@ -166,7 +175,7 @@ const App = () => {
       tokenSymbol: selectedToken.symbol,
       type: 'sell',
       amount,
-      price: selectedToken.price,
+      price: tokenPriceInBase,
       total,
       timestamp: Date.now()
     };
@@ -183,7 +192,7 @@ const App = () => {
     
     toast({
       title: "Trade Executed",
-      description: `Sold ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} ETH`
+      description: `Sold ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
     });
   };
 
@@ -205,12 +214,24 @@ const App = () => {
               <span className="text-xl font-bold text-white hidden sm:block">Base DEX</span>
             </div>
 
-            {/* Center - Balance (hidden on small screens) */}
+            {/* Center - Balance and BASE Price */}
             <div className="hidden md:flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                 <span className="text-cyan-400 text-sm font-medium">
-                  {balance.toFixed(4)} ETH
+                  {balance.toFixed(4)} BASE
                 </span>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
+                <span className="text-green-400 text-sm font-medium">
+                  BASE: ${basePrice.usd.toFixed(2)}
+                </span>
+                <button 
+                  onClick={refreshPrice} 
+                  disabled={priceLoading}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${priceLoading ? 'animate-spin' : ''}`} />
+                </button>
               </div>
             </div>
 
@@ -242,12 +263,24 @@ const App = () => {
             </div>
           </div>
 
-          {/* Mobile balance */}
-          <div className="md:hidden pb-3">
-            <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
+          {/* Mobile balance and price */}
+          <div className="md:hidden pb-3 flex items-center space-x-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
               <span className="text-cyan-400 text-sm font-medium">
-                Balance: {balance.toFixed(4)} ETH
+                Balance: {balance.toFixed(4)} BASE
               </span>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-2 flex items-center space-x-2">
+              <span className="text-green-400 text-sm font-medium">
+                ${basePrice.usd.toFixed(2)}
+              </span>
+              <button 
+                onClick={refreshPrice} 
+                disabled={priceLoading}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${priceLoading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
         </div>
@@ -280,6 +313,9 @@ const App = () => {
                     <div className="text-2xl sm:text-3xl font-bold text-cyan-400">
                       ${selectedToken.price.toFixed(6)}
                     </div>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {(selectedToken.price / basePrice.usd).toFixed(8)} BASE
+                    </div>
                   </div>
                   
                   {/* Trade Input */}
@@ -299,8 +335,11 @@ const App = () => {
                       <div className="bg-blue-500/20 p-3 rounded-lg">
                         <div className="text-sm text-gray-300">
                           Total: <span className="text-cyan-400 font-semibold">
-                            {(parseFloat(tradeAmount) * selectedToken.price).toFixed(6)} ETH
+                            {((parseFloat(tradeAmount) * selectedToken.price) / basePrice.usd).toFixed(6)} BASE
                           </span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          ${(parseFloat(tradeAmount) * selectedToken.price).toFixed(2)} USD
                         </div>
                       </div>
                     )}
@@ -310,16 +349,16 @@ const App = () => {
                       <Button 
                         onClick={handleBuy}
                         className="h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold text-base"
-                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
+                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || priceLoading}
                       >
-                        Buy
+                        {priceLoading ? 'Updating...' : 'Buy'}
                       </Button>
                       <Button 
                         onClick={handleSell}
                         className="h-12 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold text-base"
-                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || (portfolio[selectedToken.address] || 0) === 0}
+                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || (portfolio[selectedToken.address] || 0) === 0 || priceLoading}
                       >
-                        Sell
+                        {priceLoading ? 'Updating...' : 'Sell'}
                       </Button>
                     </div>
                     
