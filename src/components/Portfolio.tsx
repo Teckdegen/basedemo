@@ -24,7 +24,7 @@ interface PortfolioProps {
 const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails, basePrice, onTokenClick }) => {
   const navigate = useNavigate();
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
-  
+
   // Calculate portfolio value using actual token data and BASE price
   const totalPortfolioValue = portfolioEntries.reduce((total, [address, amount]) => {
     const tokenData = tokenDetails[address];
@@ -34,9 +34,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
     return total;
   }, 0);
 
+  // CHANGED LINE: starting balance is now 1.0, not 10.0
+  const pnl = (balance + totalPortfolioValue) - 1.0; // Starting balance was 1.0 BASE
+  const pnlPercentage = (pnl / 1.0) * 100;
+
   const totalValue = balance + totalPortfolioValue;
-  const pnl = totalValue - 10; // Starting balance was 10 BASE
-  const pnlPercentage = (pnl / 10) * 100;
 
   const handleTokenClick = (address: string) => {
     if (onTokenClick) {

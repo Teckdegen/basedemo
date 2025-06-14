@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,11 @@ const Wallet = () => {
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
   const { user, signOut, profile, loading } = useAuth();
   const { holdings, trades } = useSupabaseData();
+
+  // DEBUG LOGS: see what profile looks like
+  React.useEffect(() => {
+    console.log('[DEBUG][Wallet] profile fetched from useAuth:', profile);
+  }, [profile]);
 
   // Only redirect if wallet is disconnected - let auth handle user state
   useEffect(() => {
@@ -72,6 +78,9 @@ const Wallet = () => {
       </div>
     );
   }
+
+  // DEBUG LOG for rendering step 
+  console.log('[DEBUG][Wallet] Rendering Portfolio with balance:', profile?.base_balance, 'profile:', profile);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -145,3 +154,4 @@ const Wallet = () => {
 };
 
 export default Wallet;
+
