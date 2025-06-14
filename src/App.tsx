@@ -5,9 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Web3Provider } from "@/providers/Web3Provider";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import TradingApp from "./pages/App";
 import Wallet from "./pages/Wallet";
+import AuthPage from "./pages/AuthPage";
+import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,19 +18,22 @@ const queryClient = new QueryClient();
 const App = () => (
   <Web3Provider>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/app" element={<TradingApp />} />
-            <Route path="/wallet" element={<Wallet />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/app" element={<TradingApp />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </Web3Provider>
 );

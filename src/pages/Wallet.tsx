@@ -1,63 +1,65 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Portfolio from '@/components/Portfolio';
 import TradeHistory from '@/components/TradeHistory';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, LogOut } from 'lucide-react';
 import { useBasePrice } from '@/hooks/useBasePrice';
-
-interface TokenData {
-  address: string;
-  name: string;
-  symbol: string;
-  price: number;
-  priceChange24h: number;
-  pairAddress?: string;
-}
-
-interface Trade {
-  id: string;
-  tokenAddress: string;
-  tokenSymbol: string;
-  type: 'buy' | 'sell';
-  amount: number;
-  price: number;
-  total: number;
-  timestamp: number;
-}
+import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 
 const Wallet = () => {
-  const { isConnected, address } = useAccount();
+  const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const [balance, setBalance] = useState(10);
-  const [portfolio, setPortfolio] = useState<Record<string, number>>({});
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
+  const { user, signOut } = useAuth();
+  const { profile, holdings, trades, loading: dataLoading } = useSupabaseData();
 
   useEffect(() => {
-    if (!isConnected) {
-      navigate('/');
+    if (!isConnected || !user) {
+      navigate('/auth');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, user, navigate]);
 
-  useEffect(() => {
-    // Load user data from localStorage
-    if (address) {
-      const savedData = localStorage.getItem(`baseDemo_${address}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        setBalance(data.balance || 10);
-        setPortfolio(data.portfolio || {});
-        setTrades(data.trades || []);
-        setTokenDetails(data.tokenDetails || {});
-      }
-    }
-  }, [address]);
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
-  if (!isConnected) {
+  // Convert holdings to legacy format for Portfolio component
+  const portfolioData = holdings.reduce((acc, holding) => {
+    acc[holding.token_address] = holding.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Convert holdings to token details format
+  const tokenDetails = holdings.reduce((acc, holding) => {
+    acc[holding.token_address] = {
+      address: holding.token_address,
+      name: holding.token_name,
+      symbol: holding.token_symbol,
+      price: 0, // This would need to be fetched from current market data
+      priceChange24h: 0
+    };
+    return acc;
+  }, {} as Record<string, any>);
+
+  // Convert trades to legacy format
+  const legacyTrades = trades.map(trade => ({
+    id: trade.id,
+    tokenAddress: trade.token_address,
+    tokenSymbol: trade.token_symbol,
+    type: trade.trade_type as 'buy' | 'sell',
+    amount: trade.amount,
+    price: trade.price_per_token,
+    total: trade.total_base,
+    timestamp: new Date(trade.created_at).getTime()
+  }));
+
+  if (!isConnected || !user) {
     return null;
   }
 
@@ -87,7 +89,7 @@ const Wallet = () => {
             <div className="flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                 <span className="text-cyan-400 text-sm font-medium">
-                  Balance: {balance.toFixed(4)} BASE
+                  Balance: {profile?.base_balance.toFixed(4) || '0.0000'} BASE
                 </span>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
@@ -102,6 +104,14 @@ const Wallet = () => {
                   <RefreshCw className={`w-3 h-3 ${priceLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-white hover:bg-white/10"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
               <ConnectButton />
             </div>
           </div>
@@ -111,12 +121,13 @@ const Wallet = () => {
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid lg:grid-cols-2 gap-6">
           <Portfolio 
-            balance={balance} 
-            portfolio={portfolio} 
+            balance={profile?.base_balance || 0} 
+            portfolio={portfolioData} 
             tokenDetails={tokenDetails}
             basePrice={basePrice.usd}
+            onTokenClick={(tokenAddress) => navigate(`/trade/${tokenAddress}`)}
           />
-          <TradeHistory trades={trades} />
+          <TradeHistory trades={legacyTrades} />
         </div>
       </div>
     </div>

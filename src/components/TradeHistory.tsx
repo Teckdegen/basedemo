@@ -28,7 +28,7 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ trades }) => {
   };
 
   return (
-    <Card>
+    <Card className="bg-black/40 backdrop-blur-md border-white/20 text-white">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <span>🕘</span>
@@ -37,34 +37,34 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ trades }) => {
       </CardHeader>
       <CardContent>
         {trades.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-400">
             No trades yet
           </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {trades.slice(0, 10).map((trade) => (
-              <div key={trade.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div key={trade.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       trade.type === 'buy' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
                     }`}>
                       {trade.type.toUpperCase()}
                     </span>
-                    <span className="font-medium">{trade.tokenSymbol}</span>
+                    <span className="font-medium text-white">{trade.tokenSymbol}</span>
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-400">
                     {formatDate(trade.timestamp)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">
+                  <div className="font-medium text-white">
                     {trade.amount.toFixed(6)} tokens
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {trade.total.toFixed(4)} ETH
+                  <div className="text-sm text-gray-400">
+                    {trade.total.toFixed(4)} BASE
                   </div>
                 </div>
               </div>

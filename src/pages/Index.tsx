@@ -3,18 +3,20 @@ import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { isConnected } = useAccount();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (isConnected) {
+    if (isConnected && user) {
       navigate('/app');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
@@ -26,7 +28,16 @@ const Index = () => {
           </div>
           <span className="text-xl font-bold text-gray-900">Base Demo</span>
         </div>
-        <ConnectButton />
+        <div className="flex items-center space-x-4">
+          <Button
+            onClick={() => navigate('/auth')}
+            variant="outline"
+            className="hidden sm:flex"
+          >
+            Sign In
+          </Button>
+          <ConnectButton />
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -39,8 +50,8 @@ const Index = () => {
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Practice trading with real-time data and fake money. Perfect your strategy 
-            on Base chain tokens without any risk.
+            Practice trading with real-time data and virtual BASE tokens. Perfect your strategy 
+            on Base chain tokens without any risk. Start with 1 BASE token (pegged to real price).
           </p>
           
           <div className="flex justify-center mb-12">
@@ -70,11 +81,11 @@ const Index = () => {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => navigate('/app')}
+                        onClick={() => navigate('/auth')}
                         size="lg"
                         className="gradient-bg text-white px-8 py-4 text-lg font-semibold hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                       >
-                        Open Trading App
+                        Sign In / Sign Up
                       </Button>
                     )}
                   </div>
@@ -103,9 +114,9 @@ const Index = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📈</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Live Charts</h3>
+              <h3 className="text-xl font-semibold mb-3">Live Charts & P&L</h3>
               <p className="text-gray-600">
-                View real-time price charts and make informed trading decisions
+                View real-time price charts and track your profit/loss on each position
               </p>
             </CardContent>
           </Card>
@@ -117,7 +128,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Risk-Free Trading</h3>
               <p className="text-gray-600">
-                Start with 10 ETH fake balance and track your P&L performance
+                Start with 1 BASE token (real price) and track your performance with persistent data
               </p>
             </CardContent>
           </Card>
@@ -127,7 +138,7 @@ const Index = () => {
         <div className="mt-20 text-center">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <div className="text-3xl font-bold text-primary-800 mb-2">10 ETH</div>
+              <div className="text-3xl font-bold text-primary-800 mb-2">1 BASE</div>
               <div className="text-gray-600">Starting Balance</div>
             </div>
             <div>

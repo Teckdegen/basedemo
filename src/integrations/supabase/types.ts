@@ -9,7 +9,124 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          base_balance: number | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          base_balance?: number | null
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          base_balance?: number | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          amount: number
+          base_price_usd: number
+          created_at: string | null
+          id: string
+          price_per_token: number
+          token_address: string
+          token_symbol: string
+          total_base: number
+          trade_type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          base_price_usd: number
+          created_at?: string | null
+          id?: string
+          price_per_token: number
+          token_address: string
+          token_symbol: string
+          total_base: number
+          trade_type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          base_price_usd?: number
+          created_at?: string | null
+          id?: string
+          price_per_token?: number
+          token_address?: string
+          token_symbol?: string
+          total_base?: number
+          trade_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_holdings: {
+        Row: {
+          amount: number
+          average_buy_price: number
+          created_at: string | null
+          id: string
+          token_address: string
+          token_name: string
+          token_symbol: string
+          total_invested: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          average_buy_price?: number
+          created_at?: string | null
+          id?: string
+          token_address: string
+          token_name: string
+          token_symbol: string
+          total_invested?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          average_buy_price?: number
+          created_at?: string | null
+          id?: string
+          token_address?: string
+          token_name?: string
+          token_symbol?: string
+          total_invested?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_holdings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

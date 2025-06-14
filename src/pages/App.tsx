@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useBasePrice } from '@/hooks/useBasePrice';
-import { Wallet, Menu, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { Wallet, Menu, RefreshCw, LogOut } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -20,82 +23,41 @@ interface TokenData {
   pairAddress?: string;
 }
 
-interface Trade {
-  id: string;
-  tokenAddress: string;
-  tokenSymbol: string;
-  type: 'buy' | 'sell';
-  amount: number;
-  price: number;
-  total: number;
-  timestamp: number;
-}
-
 const App = () => {
   const { isConnected, address } = useAccount();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
+  const { user, signOut } = useAuth();
+  const { profile, executeTrade, loading: dataLoading } = useSupabaseData();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
-  const [balance, setBalance] = useState(10);
-  const [portfolio, setPortfolio] = useState<Record<string, number>>({});
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [tokenDetails, setTokenDetails] = useState<Record<string, TokenData>>({});
 
   useEffect(() => {
-    if (!isConnected) {
-      navigate('/');
+    if (!isConnected || !user) {
+      navigate('/auth');
     }
-  }, [isConnected, navigate]);
-
-  useEffect(() => {
-    // Load user data from localStorage
-    if (address) {
-      const savedData = localStorage.getItem(`baseDemo_${address}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        setBalance(data.balance || 10);
-        setPortfolio(data.portfolio || {});
-        setTrades(data.trades || []);
-        setTokenDetails(data.tokenDetails || {});
-      }
-    }
-  }, [address]);
-
-  const saveUserData = (newBalance: number, newPortfolio: Record<string, number>, newTrades: Trade[], newTokenDetails: Record<string, TokenData>) => {
-    if (address) {
-      const data = {
-        balance: newBalance,
-        portfolio: newPortfolio,
-        trades: newTrades,
-        tokenDetails: newTokenDetails
-      };
-      localStorage.setItem(`baseDemo_${address}`, JSON.stringify(data));
-    }
-  };
+  }, [isConnected, user, navigate]);
 
   const handleTokenSelect = (token: TokenData) => {
     setSelectedToken(token);
     
-    const newTokenDetails = { ...tokenDetails };
-    newTokenDetails[token.address] = token;
-    setTokenDetails(newTokenDetails);
-    
-    saveUserData(balance, portfolio, trades, newTokenDetails);
+    // Save token data to localStorage for the trading page
+    const savedTokens = JSON.parse(localStorage.getItem('scannedTokens') || '{}');
+    savedTokens[token.address] = token;
+    localStorage.setItem('scannedTokens', JSON.stringify(savedTokens));
   };
 
   const handleBuy = async () => {
-    if (!selectedToken || !tradeAmount) return;
+    if (!selectedToken || !tradeAmount || !profile) return;
     
-    // Refresh BASE price before trade
     await refreshPrice();
     
     const amount = parseFloat(tradeAmount);
     const tokenPriceInBase = selectedToken.price / basePrice.usd;
     const total = amount * tokenPriceInBase;
     
-    if (total > balance) {
+    if (total > profile.base_balance) {
       toast({
         title: "Insufficient Balance",
         description: "You don't have enough BASE for this trade",
@@ -104,99 +66,38 @@ const App = () => {
       return;
     }
 
-    const newBalance = balance - total;
-    const newPortfolio = { ...portfolio };
-    newPortfolio[selectedToken.address] = (newPortfolio[selectedToken.address] || 0) + amount;
-    
-    const newTokenDetails = { ...tokenDetails };
-    newTokenDetails[selectedToken.address] = selectedToken;
-    
-    const newTrade: Trade = {
-      id: Date.now().toString(),
-      tokenAddress: selectedToken.address,
-      tokenSymbol: selectedToken.symbol,
-      type: 'buy',
+    const { error } = await executeTrade(
+      selectedToken.address,
+      selectedToken.symbol,
+      selectedToken.name,
+      'buy',
       amount,
-      price: tokenPriceInBase,
+      tokenPriceInBase,
       total,
-      timestamp: Date.now()
-    };
-    
-    const newTrades = [newTrade, ...trades];
-    
-    setBalance(newBalance);
-    setPortfolio(newPortfolio);
-    setTrades(newTrades);
-    setTokenDetails(newTokenDetails);
-    setTradeAmount('');
-    
-    saveUserData(newBalance, newPortfolio, newTrades, newTokenDetails);
-    
-    toast({
-      title: "Trade Executed",
-      description: `Bought ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
-    });
-  };
+      basePrice.usd
+    );
 
-  const handleSell = async () => {
-    if (!selectedToken || !tradeAmount) return;
-    
-    // Refresh BASE price before trade
-    await refreshPrice();
-    
-    const amount = parseFloat(tradeAmount);
-    const currentHolding = portfolio[selectedToken.address] || 0;
-    
-    if (amount > currentHolding) {
+    if (error) {
       toast({
-        title: "Insufficient Tokens",
-        description: "You don't have enough tokens to sell",
+        title: "Trade Failed",
+        description: "Failed to execute trade. Please try again.",
         variant: "destructive"
       });
-      return;
+    } else {
+      toast({
+        title: "Trade Executed",
+        description: `Bought ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
+      });
+      setTradeAmount('');
     }
-
-    const tokenPriceInBase = selectedToken.price / basePrice.usd;
-    const total = amount * tokenPriceInBase;
-    const newBalance = balance + total;
-    const newPortfolio = { ...portfolio };
-    newPortfolio[selectedToken.address] = currentHolding - amount;
-    
-    if (newPortfolio[selectedToken.address] === 0) {
-      delete newPortfolio[selectedToken.address];
-    }
-    
-    const newTokenDetails = { ...tokenDetails };
-    newTokenDetails[selectedToken.address] = selectedToken;
-    
-    const newTrade: Trade = {
-      id: Date.now().toString(),
-      tokenAddress: selectedToken.address,
-      tokenSymbol: selectedToken.symbol,
-      type: 'sell',
-      amount,
-      price: tokenPriceInBase,
-      total,
-      timestamp: Date.now()
-    };
-    
-    const newTrades = [newTrade, ...trades];
-    
-    setBalance(newBalance);
-    setPortfolio(newPortfolio);
-    setTrades(newTrades);
-    setTokenDetails(newTokenDetails);
-    setTradeAmount('');
-    
-    saveUserData(newBalance, newPortfolio, newTrades, newTokenDetails);
-    
-    toast({
-      title: "Trade Executed",
-      description: `Sold ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
-    });
   };
 
-  if (!isConnected) {
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  if (!isConnected || !user) {
     return null;
   }
 
@@ -218,7 +119,7 @@ const App = () => {
             <div className="hidden md:flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
                 <span className="text-cyan-400 text-sm font-medium">
-                  {balance.toFixed(4)} BASE
+                  {profile?.base_balance.toFixed(4) || '0.0000'} BASE
                 </span>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2">
@@ -257,6 +158,15 @@ const App = () => {
                 <Wallet className="w-4 h-4" />
               </Button>
               
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-white hover:bg-white/10"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+              
               <div className="scale-90 sm:scale-100">
                 <ConnectButton />
               </div>
@@ -267,7 +177,7 @@ const App = () => {
           <div className="md:hidden pb-3 flex items-center space-x-3">
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
               <span className="text-cyan-400 text-sm font-medium">
-                Balance: {balance.toFixed(4)} BASE
+                Balance: {profile?.base_balance.toFixed(4) || '0.0000'} BASE
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-2 flex items-center space-x-2">
@@ -349,29 +259,17 @@ const App = () => {
                       <Button 
                         onClick={handleBuy}
                         className="h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold text-base"
-                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || priceLoading}
+                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || priceLoading || dataLoading}
                       >
-                        {priceLoading ? 'Updating...' : 'Buy'}
+                        {priceLoading || dataLoading ? 'Processing...' : 'Buy'}
                       </Button>
                       <Button 
-                        onClick={handleSell}
-                        className="h-12 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold text-base"
-                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || (portfolio[selectedToken.address] || 0) === 0 || priceLoading}
+                        onClick={() => navigate(`/trade/${selectedToken.address}`)}
+                        className="h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold text-base"
                       >
-                        {priceLoading ? 'Updating...' : 'Sell'}
+                        Advanced Trade
                       </Button>
                     </div>
-                    
-                    {/* Holdings Display */}
-                    {portfolio[selectedToken.address] && (
-                      <div className="bg-yellow-500/20 p-3 rounded-lg">
-                        <div className="text-sm text-gray-300">
-                          Your Holdings: <span className="text-yellow-400 font-semibold">
-                            {portfolio[selectedToken.address].toFixed(6)} {selectedToken.symbol}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
