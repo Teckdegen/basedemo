@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchBasePrice, PriceData } from '@/services/priceService';
+import { fetchBasePrice, clearTokenPriceCache, PriceData } from '@/services/priceService';
 
 export const useBasePrice = () => {
   const [priceData, setPriceData] = useState<PriceData>({
-    usd: 2500,
+    usd: 0.27, // Set realistic initial value
     usd_24h_change: 0
   });
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export const useBasePrice = () => {
       console.log('BASE price updated:', newPriceData);
     } catch (err) {
       setError('Failed to fetch BASE price');
-      console.error('Price update error:', err);
+      console.error('BASE price update error:', err);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -34,9 +34,8 @@ export const useBasePrice = () => {
     
     // Set up interval to fetch price every 5 minutes (300000ms)
     const interval = setInterval(() => {
-      console.log('Auto-refreshing BASE price...');
       updatePrice(false); // Don't show loading for background updates
-    }, 300000); // 5 minutes
+    }, 300000);
     
     return () => clearInterval(interval);
   }, [updatePrice]);
@@ -44,6 +43,7 @@ export const useBasePrice = () => {
   // Force refresh function for after trades
   const forceRefresh = useCallback(async () => {
     console.log('Force refreshing BASE price after trade...');
+    clearTokenPriceCache('base-protocol'); // Clear cache to force fresh data
     await updatePrice(true);
   }, [updatePrice]);
 

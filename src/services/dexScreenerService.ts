@@ -50,6 +50,64 @@ export interface TrendingTokensResponse {
   pairs: TrendingToken[];
 }
 
+export interface TokenSearchResult {
+  address: string;
+  name: string;
+  symbol: string;
+  price: number;
+  priceChange24h: number;
+  marketCap?: number;
+  dex: string;
+  liquidity?: number;
+  volume24h?: number;
+  pairAddress?: string;
+}
+
+export const searchTokenByAddress = async (tokenAddress: string): Promise<TokenSearchResult | null> => {
+  try {
+    console.log('Searching for token:', tokenAddress);
+    const response = await fetch(`${DEXSCREENER_API_BASE}/tokens/${tokenAddress}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch token data');
+    }
+    
+    const data: TrendingTokensResponse = await response.json();
+    console.log('API Response:', data);
+    
+    if (!data.pairs || data.pairs.length === 0) {
+      return null;
+    }
+    
+    // Find the pair with highest liquidity on Base network
+    const basePairs = data.pairs.filter(pair => pair.chainId === 'base');
+    if (basePairs.length === 0) {
+      return null;
+    }
+    
+    // Sort by liquidity (highest first) and take the most liquid pair
+    const bestPair = basePairs.sort((a, b) => 
+      (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0)
+    )[0];
+    
+    return {
+      address: bestPair.baseToken.address,
+      name: bestPair.baseToken.name,
+      symbol: bestPair.baseToken.symbol,
+      price: parseFloat(bestPair.priceUsd),
+      priceChange24h: bestPair.priceChange.h24,
+      marketCap: bestPair.marketCap,
+      dex: bestPair.dexId.charAt(0).toUpperCase() + bestPair.dexId.slice(1), // Capitalize DEX name
+      liquidity: bestPair.liquidity?.usd,
+      volume24h: bestPair.volume.h24,
+      pairAddress: bestPair.pairAddress
+    };
+  } catch (error) {
+    console.error('Error searching token:', error);
+    return null;
+  }
+};
+
 export const fetchTrendingTokens = async (): Promise<TrendingToken[]> => {
   try {
     // Fetch trending tokens from Base network

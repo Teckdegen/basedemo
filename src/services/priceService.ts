@@ -1,3 +1,4 @@
+
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
 export interface PriceData {
@@ -11,79 +12,71 @@ export interface TokenPriceData extends PriceData {
 
 // Cache for token prices to avoid excessive API calls
 const priceCache = new Map<string, TokenPriceData>();
-const CACHE_DURATION = 30000; // 30 seconds cache
+const CACHE_DURATION = 300000; // 5 minutes cache (300 seconds)
 
 export const fetchBasePrice = async (): Promise<PriceData> => {
+  // Check cache first for BASE price
+  const cached = priceCache.get('base-protocol');
+  const now = Date.now();
+  
+  if (cached && (now - cached.lastUpdated) < CACHE_DURATION) {
+    console.log('Using cached BASE price:', cached);
+    return {
+      usd: cached.usd,
+      usd_24h_change: cached.usd_24h_change
+    };
+  }
+
   try {
-    // Try multiple approaches to get BASE token price
-    let response;
-    let data;
+    // Use consistent source - base-protocol token
+    const response = await fetch(
+      `${COINGECKO_API_BASE}/simple/price?ids=base-protocol&vs_currencies=usd&include_24hr_change=true`
+    );
     
-    // First try: Base Protocol token
-    try {
-      response = await fetch(
-        `${COINGECKO_API_BASE}/simple/price?ids=base-protocol&vs_currencies=usd&include_24hr_change=true`
-      );
-      if (response.ok) {
-        data = await response.json();
-        if (data['base-protocol']?.usd) {
-          console.log('BASE price fetched from base-protocol:', data['base-protocol']);
-          return {
-            usd: data['base-protocol'].usd,
-            usd_24h_change: data['base-protocol'].usd_24h_change || 0
-          };
-        }
+    if (response.ok) {
+      const data = await response.json();
+      if (data['base-protocol']?.usd) {
+        const priceData = {
+          usd: data['base-protocol'].usd,
+          usd_24h_change: data['base-protocol'].usd_24h_change || 0,
+          lastUpdated: now
+        };
+        
+        // Cache the result
+        priceCache.set('base-protocol', priceData);
+        console.log('BASE price fetched and cached:', priceData);
+        
+        return {
+          usd: priceData.usd,
+          usd_24h_change: priceData.usd_24h_change
+        };
       }
-    } catch (e) {
-      console.log('base-protocol fetch failed, trying alternatives...');
-    }
-
-    // Second try: Search for BASE token by contract address on Base network
-    try {
-      response = await fetch(
-        `${COINGECKO_API_BASE}/simple/token_price/base?contract_addresses=0x4200000000000000000000000000000000000006&vs_currencies=usd&include_24hr_change=true`
-      );
-      if (response.ok) {
-        data = await response.json();
-        const contractData = data['0x4200000000000000000000000000000000000006'];
-        if (contractData?.usd) {
-          console.log('BASE price fetched from contract address:', contractData);
-          return {
-            usd: contractData.usd,
-            usd_24h_change: contractData.usd_24h_change || 0
-          };
-        }
-      }
-    } catch (e) {
-      console.log('Contract address fetch failed...');
-    }
-
-    // Third try: Use ETH price as BASE inherits from Ethereum
-    try {
-      response = await fetch(
-        `${COINGECKO_API_BASE}/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true`
-      );
-      if (response.ok) {
-        data = await response.json();
-        if (data.ethereum?.usd) {
-          console.log('Using ETH price as BASE fallback:', data.ethereum);
-          return {
-            usd: data.ethereum.usd,
-            usd_24h_change: data.ethereum.usd_24h_change || 0
-          };
-        }
-      }
-    } catch (e) {
-      console.log('ETH price fetch failed...');
     }
     
-    throw new Error('All price fetch methods failed');
+    throw new Error('Failed to fetch BASE price from primary source');
   } catch (error) {
     console.error('Error fetching BASE price:', error);
-    // Return a more realistic fallback price
+    
+    // Return cached data if available, otherwise fallback
+    if (cached) {
+      console.log('Using expired cached BASE price due to error:', cached);
+      return {
+        usd: cached.usd,
+        usd_24h_change: cached.usd_24h_change
+      };
+    }
+    
+    // Consistent fallback price
+    const fallbackPrice = {
+      usd: 0.27,
+      usd_24h_change: 0,
+      lastUpdated: now
+    };
+    priceCache.set('base-protocol', fallbackPrice);
+    
     return {
-      usd: 2500.0, // More realistic ETH-like price
-      usd_24h_change: 0
+      usd: fallbackPrice.usd,
+      usd_24h_change: fallbackPrice.usd_24h_change
     };
   }
 };

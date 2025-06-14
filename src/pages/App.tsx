@@ -22,6 +22,10 @@ interface TokenData {
   symbol: string;
   price: number;
   priceChange24h: number;
+  marketCap?: number;
+  dex?: string;
+  liquidity?: number;
+  volume24h?: number;
   pairAddress?: string;
 }
 
@@ -279,14 +283,50 @@ const App = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Price Display */}
-                  <div className="bg-white/5 p-4 rounded-xl">
+                  {/* Token Info Display */}
+                  <div className="bg-white/5 p-4 rounded-xl space-y-3">
                     <div className="text-sm text-gray-400 mb-1">Current Price</div>
                     <div className="text-2xl sm:text-3xl font-bold text-cyan-400">
                       ${selectedToken.price.toFixed(6)}
                     </div>
                     <div className="text-sm text-gray-400 mt-1">
                       {(selectedToken.price / basePrice.usd).toFixed(8)} BASE
+                    </div>
+                    
+                    {/* Market Info */}
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-3 border-t border-white/10">
+                      {selectedToken.marketCap && (
+                        <div>
+                          <div className="text-xs text-gray-500">Market Cap</div>
+                          <div className="text-sm font-semibold text-white">
+                            ${selectedToken.marketCap.toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                      {selectedToken.dex && (
+                        <div>
+                          <div className="text-xs text-gray-500">DEX</div>
+                          <div className="text-sm font-semibold text-white">
+                            {selectedToken.dex}
+                          </div>
+                        </div>
+                      )}
+                      {selectedToken.liquidity && (
+                        <div>
+                          <div className="text-xs text-gray-500">Liquidity</div>
+                          <div className="text-sm font-semibold text-white">
+                            ${selectedToken.liquidity.toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                      {selectedToken.volume24h && (
+                        <div>
+                          <div className="text-xs text-gray-500">24h Volume</div>
+                          <div className="text-sm font-semibold text-white">
+                            ${selectedToken.volume24h.toLocaleString()}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
