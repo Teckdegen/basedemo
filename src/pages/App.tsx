@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -34,10 +33,10 @@ const App = () => {
   const [tradeAmount, setTradeAmount] = useState('');
 
   useEffect(() => {
-    if (!isConnected || !user) {
+    if (!isConnected) {
       navigate('/');
     }
-  }, [isConnected, user, navigate]);
+  }, [isConnected, navigate]);
 
   const handleTokenSelect = (token: TokenData) => {
     setSelectedToken(token);
@@ -97,8 +96,12 @@ const App = () => {
     navigate('/');
   };
 
-  if (!isConnected || !user || loading) {
-    return null;
+  if (!isConnected || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
   }
 
   return (
