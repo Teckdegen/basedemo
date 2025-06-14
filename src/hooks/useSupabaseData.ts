@@ -90,7 +90,12 @@ export const useSupabaseData = () => {
         .order('created_at', { ascending: false });
 
       if (tradesData) {
-        setTrades(tradesData);
+        // Type assertion to ensure trade_type is properly typed
+        const typedTrades = tradesData.map(trade => ({
+          ...trade,
+          trade_type: trade.trade_type as 'buy' | 'sell'
+        }));
+        setTrades(typedTrades);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

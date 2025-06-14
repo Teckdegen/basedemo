@@ -18,9 +18,10 @@ interface PortfolioProps {
   portfolio: Record<string, number>;
   tokenDetails: Record<string, TokenData>;
   basePrice: number;
+  onTokenClick?: (tokenAddress: string) => void;
 }
 
-const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails, basePrice }) => {
+const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails, basePrice, onTokenClick }) => {
   const navigate = useNavigate();
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
   
@@ -36,6 +37,12 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
   const totalValue = balance + totalPortfolioValue;
   const pnl = totalValue - 10; // Starting balance was 10 BASE
   const pnlPercentage = (pnl / 10) * 100;
+
+  const handleTokenClick = (address: string) => {
+    if (onTokenClick) {
+      onTokenClick(address);
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -123,7 +130,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
                 
                 if (!tokenData) {
                   return (
-                    <div key={address} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
+                    <div 
+                      key={address} 
+                      className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30 cursor-pointer hover:bg-slate-700/50 transition-colors"
+                      onClick={() => handleTokenClick(address)}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
@@ -147,7 +158,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
                 const tokenInitials = tokenData.symbol.substring(0, 2).toUpperCase();
                 
                 return (
-                  <div key={address} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30 hover:bg-slate-700/50 transition-colors">
+                  <div 
+                    key={address} 
+                    className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                    onClick={() => handleTokenClick(address)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center">
