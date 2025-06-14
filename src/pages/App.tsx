@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from "@/hooks/useAuth";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Wallet, Menu, RefreshCw, LogOut } from 'lucide-react';
+import { Wallet, Menu, RefreshCw, LogOut, Bot } from 'lucide-react';
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { AiChat } from "@/components/AiChat";
 
 interface TokenData {
   address: string;
@@ -295,6 +298,23 @@ const App = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Chat FAB */}
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Button
+            className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg hover:scale-110 transition-transform"
+            size="icon"
+          >
+            <Bot className="w-8 h-8" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent className="bg-transparent border-none">
+          <div className="max-w-2xl mx-auto">
+            <AiChat />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };
