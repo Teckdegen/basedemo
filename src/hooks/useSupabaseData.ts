@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -195,7 +194,7 @@ export const useSupabaseData = () => {
             amount: newAmount,
             average_buy_price: newAverageBuyPrice,
             total_invested: newTotalInvested
-          });
+          }, { onConflict: 'user_id, token_address' });
 
         // Update profile balance
         await updateProfile({ base_balance: profile.base_balance - totalBase });
@@ -205,7 +204,7 @@ export const useSupabaseData = () => {
           const proportionSold = amount / existingHolding.amount;
           const newTotalInvested = existingHolding.total_invested * (1 - proportionSold);
 
-          if (newAmount <= 0) {
+          if (newAmount <= 0.000001) { // Use a small epsilon for float comparison
             await supabase
               .from('user_holdings')
               .delete()

@@ -29,10 +29,12 @@ const App = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, profile, loading, signOut } = useAuth();
-  const { executeTrade, loading: dataLoading } = useSupabaseData();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, holdings, executeTrade, loading: dataLoading, refreshData } = useSupabaseData();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
+
+  const currentHolding = selectedToken ? holdings.find(h => h.token_address === selectedToken.address) : undefined;
 
   useEffect(() => {
     if (!isConnected) {
@@ -90,6 +92,53 @@ const App = () => {
         description: `Bought ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
       });
       setTradeAmount('');
+      refreshData(); // Refresh data to show new balance and holdings
+    }
+  };
+
+  const handleSell = async () => {
+    if (!selectedToken || !tradeAmount || !profile || !currentHolding) return;
+
+    await refreshPrice();
+
+    const amount = parseFloat(tradeAmount);
+
+    if (amount > currentHolding.amount) {
+      toast({
+        title: "Insufficient Tokens",
+        description: `You only have ${currentHolding.amount.toFixed(6)} ${selectedToken.symbol}.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const tokenPriceInBase = selectedToken.price / basePrice.usd;
+    const total = amount * tokenPriceInBase;
+
+    const { error } = await executeTrade(
+      selectedToken.address,
+      selectedToken.symbol,
+      selectedToken.name,
+      'sell',
+      amount,
+      tokenPriceInBase,
+      total,
+      basePrice.usd
+    );
+
+    if (error) {
+      toast({
+        title: "Trade Failed",
+        description: "Failed to execute trade. Please try again.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Trade Executed",
+        description: `Sold ${amount} ${selectedToken.symbol} for ${total.toFixed(4)} BASE`
+      });
+      setTradeAmount('');
+      refreshData(); // Refresh data to show new balance and holdings
     }
   };
 
@@ -102,7 +151,7 @@ const App = () => {
     refreshPrice(true);
   };
 
-  if (!isConnected || loading) {
+  if (!isConnected || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
@@ -239,6 +288,11 @@ const App = () => {
                   
                   {/* Trade Input */}
                   <div className="space-y-4">
+                    {currentHolding && currentHolding.amount > 0 && (
+                      <div className="text-sm text-gray-400">
+                        You hold: <span className="font-semibold text-white">{currentHolding.amount.toFixed(6)} {selectedToken.symbol}</span>
+                      </div>
+                    )}
                     <div>
                       <label className="text-sm text-gray-400 block mb-2">Amount to Trade</label>
                       <Input
@@ -271,6 +325,13 @@ const App = () => {
                         disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || priceLoading || dataLoading}
                       >
                         {priceLoading || dataLoading ? 'Processing...' : 'Buy'}
+                      </Button>
+                      <Button 
+                        onClick={handleSell}
+                        className="h-12 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold text-base w-full"
+                        disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || !currentHolding || currentHolding.amount <= 0 || priceLoading || dataLoading}
+                      >
+                        {priceLoading || dataLoading ? 'Processing...' : 'Sell'}
                       </Button>
                     </div>
                   </div>
