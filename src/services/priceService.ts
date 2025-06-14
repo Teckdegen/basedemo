@@ -16,8 +16,10 @@ const CACHE_DURATION = 30000; // 30 seconds cache
 
 export const fetchBasePrice = async (): Promise<PriceData> => {
   try {
+    // Use the correct CoinGecko ID for Base network - it's actually "ethereum" since BASE is ETH on Base network
+    // Or we can use a USD stablecoin price and assume 1 BASE = 1 ETH for now
     const response = await fetch(
-      `${COINGECKO_API_BASE}/simple/price?ids=base&vs_currencies=usd&include_24hr_change=true`
+      `${COINGECKO_API_BASE}/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true`
     );
     
     if (!response.ok) {
@@ -27,12 +29,12 @@ export const fetchBasePrice = async (): Promise<PriceData> => {
     const data = await response.json();
     
     return {
-      usd: data.base?.usd || 0,
-      usd_24h_change: data.base?.usd_24h_change || 0
+      usd: data.ethereum?.usd || 2500,
+      usd_24h_change: data.ethereum?.usd_24h_change || 0
     };
   } catch (error) {
     console.error('Error fetching BASE price:', error);
-    // Fallback to a default price if API fails
+    // Fallback to a realistic ETH price if API fails
     return {
       usd: 2500,
       usd_24h_change: 0
