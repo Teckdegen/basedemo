@@ -91,7 +91,6 @@ const TradingApp = () => {
           </div>
         </div>
       </nav>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
@@ -100,9 +99,10 @@ const TradingApp = () => {
             <TokenScanner onTokenSelect={handleTokenSelect} />
             <TrendingTokens onTokenSelect={handleTokenSelect} />
           </div>
-          
           {/* Right Column - AI Chat */}
           <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
+            {/* Ensure Dialog context is included for any dialog pieces */}
+            {/* Example: if AiChat or any direct children use DialogClose, make sure to wrap in Dialog */}
             <AiChat selectedToken={selectedToken} />
           </div>
         </div>
@@ -112,3 +112,4 @@ const TradingApp = () => {
 };
 
 export default TradingApp;
+
