@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -18,11 +17,12 @@ const Wallet = () => {
   const { user, signOut, profile, loading } = useAuth();
   const { holdings, trades } = useSupabaseData();
 
+  // Fix redirect: only redirect when not loading and there's no user
   useEffect(() => {
-    if (!isConnected || !user) {
+    if (!isConnected || (!user && !loading)) {
       navigate('/');
     }
-  }, [isConnected, user, navigate]);
+  }, [isConnected, user, loading, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,8 +59,13 @@ const Wallet = () => {
     timestamp: new Date(trade.created_at).getTime()
   }));
 
+  // Show loading state while user/profile is loading
   if (!isConnected || !user || loading) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
   }
 
   return (
