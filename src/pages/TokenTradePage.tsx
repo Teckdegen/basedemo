@@ -28,7 +28,9 @@ const TokenTradePage = () => {
   const { toast } = useToast();
   
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
-  const [tradeAmount, setTradeAmount] = useState('');
+  const [baseAmount, setBaseAmount] = useState('');
+  const [tokenAmount, setTokenAmount] = useState('');
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [loading, setLoading] = useState(false);
 
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
@@ -50,6 +52,24 @@ const TokenTradePage = () => {
     }
   }, [user, tokenAddress, navigate]);
 
+  // Calculate token amount when BASE amount changes (for buy)
+  useEffect(() => {
+    if (tradeType === 'buy' && baseAmount && tokenData) {
+      const pricePerToken = tokenData.price / basePrice.usd;
+      const calculatedTokens = parseFloat(baseAmount) / pricePerToken;
+      setTokenAmount(calculatedTokens.toFixed(6));
+    }
+  }, [baseAmount, tradeType, tokenData, basePrice.usd]);
+
+  // Calculate BASE amount when token amount changes (for sell)
+  useEffect(() => {
+    if (tradeType === 'sell' && tokenAmount && tokenData) {
+      const pricePerToken = tokenData.price / basePrice.usd;
+      const calculatedBase = parseFloat(tokenAmount) * pricePerToken;
+      setBaseAmount(calculatedBase.toFixed(6));
+    }
+  }, [tokenAmount, tradeType, tokenData, basePrice.usd]);
+
   const profitLoss = currentHolding ? {
     unrealizedPnL: currentHolding.amount * (tokenData?.price || 0) / basePrice.usd - currentHolding.total_invested,
     unrealizedPnLPercent: currentHolding.total_invested > 0 ? 
@@ -57,29 +77,37 @@ const TokenTradePage = () => {
     currentValue: currentHolding.amount * (tokenData?.price || 0) / basePrice.usd
   } : null;
 
-  const handleTrade = async (type: 'buy' | 'sell') => {
-    if (!tokenData || !profile || !tradeAmount) return;
+  const handleTradeTypeChange = (type: 'buy' | 'sell') => {
+    setTradeType(type);
+    setBaseAmount('');
+    setTokenAmount('');
+  };
 
-    const amount = parseFloat(tradeAmount);
+  const handleTrade = async () => {
+    if (!tokenData || !profile) return;
+
+    const tokensToTrade = parseFloat(tokenAmount);
+    const baseToSpend = parseFloat(baseAmount);
     const pricePerToken = tokenData.price / basePrice.usd;
-    const totalBase = amount * pricePerToken;
 
-    if (type === 'buy' && totalBase > profile.base_balance) {
-      toast({
-        title: "Insufficient Balance",
-        description: "You don't have enough BASE for this trade",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (type === 'sell' && (!currentHolding || amount > currentHolding.amount)) {
-      toast({
-        title: "Insufficient Tokens",
-        description: "You don't have enough tokens to sell",
-        variant: "destructive"
-      });
-      return;
+    if (tradeType === 'buy') {
+      if (baseToSpend > profile.base_balance) {
+        toast({
+          title: "Insufficient Balance",
+          description: "You don't have enough BASE for this trade",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (!currentHolding || tokensToTrade > currentHolding.amount) {
+        toast({
+          title: "Insufficient Tokens",
+          description: "You don't have enough tokens to sell",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -88,10 +116,10 @@ const TokenTradePage = () => {
         tokenData.address,
         tokenData.symbol,
         tokenData.name,
-        type,
-        amount,
+        tradeType,
+        tokensToTrade,
         pricePerToken,
-        totalBase,
+        baseToSpend,
         basePrice.usd,
         async () => {
           // Refresh prices after trade
@@ -108,9 +136,10 @@ const TokenTradePage = () => {
       } else {
         toast({
           title: "Trade Executed",
-          description: `${type === 'buy' ? 'Bought' : 'Sold'} ${amount} ${tokenData.symbol}`,
+          description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tokensToTrade.toFixed(6)} ${tokenData.symbol} for ${baseToSpend.toFixed(6)} BASE`,
         });
-        setTradeAmount('');
+        setBaseAmount('');
+        setTokenAmount('');
       }
     } catch (error) {
       toast({
@@ -164,7 +193,7 @@ const TokenTradePage = () => {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
               <span className="text-cyan-400 text-sm font-medium">
-                Balance: {profile?.base_balance.toFixed(4) || '0.0000'} BASE
+                Balance: {(profile?.base_balance ?? 1.0).toFixed(4)} BASE
               </span>
             </div>
           </div>
@@ -266,43 +295,85 @@ const TokenTradePage = () => {
                 <CardTitle>Trade {tokenData.symbol}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Amount</label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={tradeAmount}
-                    onChange={(e) => setTradeAmount(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white placeholder-gray-500"
-                  />
+                {/* Trade Type Selector */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button
+                    variant={tradeType === 'buy' ? 'default' : 'outline'}
+                    onClick={() => handleTradeTypeChange('buy')}
+                    className={tradeType === 'buy' ? 'bg-green-600 hover:bg-green-700' : ''}
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    variant={tradeType === 'sell' ? 'default' : 'outline'}
+                    onClick={() => handleTradeTypeChange('sell')}
+                    className={tradeType === 'sell' ? 'bg-red-600 hover:bg-red-700' : ''}
+                    disabled={!currentHolding}
+                  >
+                    Sell
+                  </Button>
                 </div>
-                
-                {tradeAmount && (
-                  <div className="bg-blue-500/20 p-3 rounded-lg">
-                    <div className="text-sm text-gray-300">
-                      Total: <span className="text-cyan-400 font-semibold">
-                        {((parseFloat(tradeAmount) * tokenData.price) / basePrice.usd).toFixed(6)} BASE
-                      </span>
-                    </div>
+
+                {tradeType === 'buy' ? (
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">BASE to Spend</label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={baseAmount}
+                      onChange={(e) => setBaseAmount(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white placeholder-gray-500"
+                    />
+                    {baseAmount && tokenAmount && (
+                      <div className="mt-2 text-sm text-gray-400">
+                        You will receive: <span className="text-cyan-400 font-semibold">
+                          {parseFloat(tokenAmount).toFixed(6)} {tokenData.symbol}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Tokens to Sell</label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={tokenAmount}
+                      onChange={(e) => setTokenAmount(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white placeholder-gray-500"
+                      max={currentHolding?.amount || 0}
+                    />
+                    {currentHolding && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        Available: {currentHolding.amount.toFixed(6)} {tokenData.symbol}
+                      </div>
+                    )}
+                    {tokenAmount && baseAmount && (
+                      <div className="mt-2 text-sm text-gray-400">
+                        You will receive: <span className="text-cyan-400 font-semibold">
+                          {parseFloat(baseAmount).toFixed(6)} BASE
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    onClick={() => handleTrade('buy')}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600"
-                    disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || loading || dataLoading}
-                  >
-                    {loading ? 'Processing...' : 'Buy'}
-                  </Button>
-                  <Button 
-                    onClick={() => handleTrade('sell')}
-                    className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600"
-                    disabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || !currentHolding || loading || dataLoading}
-                  >
-                    {loading ? 'Processing...' : 'Sell'}
-                  </Button>
-                </div>
+                <Button 
+                  onClick={handleTrade}
+                  className={`w-full ${
+                    tradeType === 'buy' 
+                      ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600'
+                      : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600'
+                  }`}
+                  disabled={
+                    loading || 
+                    dataLoading || 
+                    (tradeType === 'buy' && (!baseAmount || parseFloat(baseAmount) <= 0)) ||
+                    (tradeType === 'sell' && (!tokenAmount || parseFloat(tokenAmount) <= 0))
+                  }
+                >
+                  {loading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${tokenData.symbol}`}
+                </Button>
               </CardContent>
             </Card>
           </div>
