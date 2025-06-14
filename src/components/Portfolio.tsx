@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wallet, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TokenData {
   address: string;
@@ -18,6 +20,7 @@ interface PortfolioProps {
 }
 
 const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails }) => {
+  const navigate = useNavigate();
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
   
   // Calculate portfolio value using actual token data
@@ -30,66 +33,87 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails 
   }, 0);
 
   const totalValue = balance + totalPortfolioValue;
-  const pnl = totalValue - 10; // Starting balance was 10 ETH
+  const pnl = totalValue - 10; // Starting balance was 10 BASE
   const pnlPercentage = (pnl / 10) * 100;
 
   return (
-    <Card className="bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-lg">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center space-x-2 text-slate-800">
-          <Wallet className="w-5 h-5" />
-          <span>Wallet</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Wallet Summary */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-2xl text-white">
-          <div className="space-y-4">
-            <div>
-              <div className="text-blue-100 text-sm">Total Portfolio Value</div>
-              <div className="text-3xl font-bold">{totalValue.toFixed(4)} ETH</div>
-              <div className="text-blue-100 text-sm">${(totalValue * 3000).toLocaleString()} USD</div>
+    <div className="space-y-6">
+      {/* Main Portfolio Card */}
+      <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 text-white overflow-hidden">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold">Portfolio</span>
             </div>
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="text-blue-100 text-sm">24h P&L</div>
-                <div className={`text-lg font-semibold ${pnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} ETH ({pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
+            <Button
+              onClick={() => navigate('/app')}
+              className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-semibold px-6 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Start Trading</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Total Value Display */}
+          <div className="bg-gradient-to-r from-slate-700/50 to-slate-800/50 p-6 rounded-2xl backdrop-blur-sm">
+            <div className="text-center space-y-3">
+              <div className="text-sm text-slate-400 font-medium">Total Portfolio Value</div>
+              <div className="text-4xl font-bold text-white">{totalValue.toFixed(4)} BASE</div>
+              <div className="text-slate-300">${(totalValue * 2500).toLocaleString()} USD</div>
+              <div className={`text-lg font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} BASE ({pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
+              </div>
+            </div>
+          </div>
+
+          {/* BASE Balance */}
+          <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">BASE</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-lg">Base</div>
+                  <div className="text-sm text-slate-400">BASE</div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ETH Balance Card */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                ETH
-              </div>
-              <div>
-                <div className="font-semibold text-slate-900">Ethereum</div>
-                <div className="text-sm text-slate-500">ETH</div>
+              <div className="text-right">
+                <div className="font-bold text-white text-lg">{balance.toFixed(4)} BASE</div>
+                <div className="text-sm text-slate-400">${(balance * 2500).toLocaleString()}</div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="font-semibold text-slate-900">{balance.toFixed(4)} ETH</div>
-              <div className="text-sm text-slate-500">${(balance * 3000).toLocaleString()}</div>
-            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Token Holdings */}
-        <div>
-          <div className="text-sm font-medium text-slate-600 mb-3">Token Holdings ({portfolioEntries.length})</div>
+      {/* Token Holdings Card */}
+      <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 text-white">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-2">
+            <span className="text-lg">Token Holdings</span>
+            <span className="text-sm text-slate-400">({portfolioEntries.length})</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           {portfolioEntries.length === 0 ? (
-            <div className="bg-white p-8 rounded-xl border border-slate-200 text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Wallet className="w-8 h-8 text-slate-400" />
               </div>
-              <div className="text-slate-500 font-medium">No tokens yet</div>
-              <div className="text-sm text-slate-400">Start trading to build your portfolio</div>
+              <div className="text-slate-300 font-medium mb-2">No tokens yet</div>
+              <div className="text-sm text-slate-500 mb-6">Start trading to build your portfolio</div>
+              <Button
+                onClick={() => navigate('/app')}
+                className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-semibold px-6 py-2 rounded-xl"
+              >
+                Start Trading
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -98,20 +122,20 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails 
                 
                 if (!tokenData) {
                   return (
-                    <div key={address} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div key={address} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                            ?
+                          <div className="w-12 h-12 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">?</span>
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-900">Unknown Token</div>
-                            <div className="text-sm text-slate-500">{amount.toFixed(6)} tokens</div>
+                            <div className="font-semibold text-white">Unknown Token</div>
+                            <div className="text-sm text-slate-400">{amount.toFixed(6)} tokens</div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold text-slate-500">--</div>
-                          <div className="text-sm text-slate-400">Price unavailable</div>
+                          <div className="font-semibold text-slate-400">--</div>
+                          <div className="text-sm text-slate-500">Price unavailable</div>
                         </div>
                       </div>
                     </div>
@@ -122,21 +146,21 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails 
                 const tokenInitials = tokenData.symbol.substring(0, 2).toUpperCase();
                 
                 return (
-                  <div key={address} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={address} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30 hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {tokenInitials}
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">{tokenInitials}</span>
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-900">{tokenData.name}</div>
-                          <div className="text-sm text-slate-500">{amount.toFixed(6)} {tokenData.symbol}</div>
+                          <div className="font-semibold text-white">{tokenData.name}</div>
+                          <div className="text-sm text-slate-400">{amount.toFixed(6)} {tokenData.symbol}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-slate-900">{value.toFixed(4)} ETH</div>
-                        <div className="text-sm text-slate-500">${tokenData.price.toFixed(6)}</div>
-                        <div className={`text-xs font-medium ${tokenData.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="font-semibold text-white">{value.toFixed(4)} BASE</div>
+                        <div className="text-sm text-slate-400">${tokenData.price.toFixed(6)}</div>
+                        <div className={`text-xs font-medium ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {tokenData.priceChange24h >= 0 ? '+' : ''}{tokenData.priceChange24h.toFixed(2)}%
                         </div>
                       </div>
@@ -146,9 +170,9 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails 
               })}
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
