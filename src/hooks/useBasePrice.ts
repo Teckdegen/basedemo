@@ -34,8 +34,9 @@ export const useBasePrice = () => {
     
     // Set up interval to fetch price every 5 minutes (300000ms)
     const interval = setInterval(() => {
+      console.log('Auto-refreshing BASE price...');
       updatePrice(false); // Don't show loading for background updates
-    }, 300000);
+    }, 300000); // 5 minutes
     
     return () => clearInterval(interval);
   }, [updatePrice]);
