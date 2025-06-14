@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount } from 'wagmi';
@@ -65,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setTimeout(() => {
         supabase
           .from('profiles')
-          .upsert({ id: user.id, wallet_address: address }, { onConflict: ['id'] });
+          .upsert({ id: user.id, wallet_address: address }, { onConflict: 'id' });
       }, 0);
     }
     // eslint-disable-next-line

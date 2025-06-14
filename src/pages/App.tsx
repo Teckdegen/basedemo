@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,7 @@ const App = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const { executeTrade, loading: dataLoading } = useSupabaseData();
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [tradeAmount, setTradeAmount] = useState('');
