@@ -1,10 +1,12 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BountyWinnerAnalysis } from "@/components/BountyWinnerAnalysis";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccount, useSendTransaction } from "wagmi";
+import { parseEther } from "viem";
+import { toast } from "@/hooks/use-toast";
 
 type Bounty = {
   id: string;
@@ -32,11 +34,14 @@ export default function BountyDetailPage() {
   const { bountyId } = useParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { address, isConnected } = useAccount();
+  const { sendTransaction } = useSendTransaction();
   const [bounty, setBounty] = useState<Bounty | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
+  const userEntry = entries.find(e => e.wallet_address?.toLowerCase() === profile?.wallet_address?.toLowerCase());
 
   useEffect(() => {
     async function fetchBounty() {
@@ -59,6 +64,31 @@ export default function BountyDetailPage() {
     }
     fetchBounty();
   }, [bountyId]);
+
+  const handleSendPayment = async () => {
+    if (!bounty || !isConnected || !address) {
+      toast({ title: "Connect wallet", description: "Please connect your wallet first." });
+      return;
+    }
+
+    try {
+      await sendTransaction({
+        to: ADMIN_WALLET as `0x${string}`,
+        value: parseEther(bounty.entry_price.toString()),
+      });
+      
+      toast({ 
+        title: "Payment sent!", 
+        description: "Your payment has been sent. It will be confirmed shortly." 
+      });
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({ 
+        title: "Payment failed", 
+        description: "There was an error sending your payment. Please try again." 
+      });
+    }
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading...</div>;
@@ -114,7 +144,7 @@ export default function BountyDetailPage() {
             </div>
           </div>
 
-          {/* Payment Instructions */}
+          {/* Payment Instructions and Actions */}
           <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600/30">
             <h3 className="text-cyan-300 font-semibold mb-2">How to Enter:</h3>
             <p className="text-white/80 text-sm mb-2">
@@ -123,10 +153,22 @@ export default function BountyDetailPage() {
             <p className="text-white/80 text-sm mb-2">
               2. Send {bounty.entry_price} BASE to the admin wallet:
             </p>
-            <div className="bg-slate-900 p-2 rounded border font-mono text-xs text-green-300 break-all">
+            <div className="bg-slate-900 p-2 rounded border font-mono text-xs text-green-300 break-all mb-4">
               {ADMIN_WALLET}
             </div>
-            <p className="text-white/80 text-sm mt-2">
+            
+            {userEntry && !userEntry.paid && isConnected && (
+              <div className="mb-4">
+                <Button 
+                  onClick={handleSendPayment}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Send Payment ({bounty.entry_price} BASE)
+                </Button>
+              </div>
+            )}
+            
+            <p className="text-white/80 text-sm">
               3. Once payment is confirmed, you'll be eligible for the bounty
             </p>
           </div>

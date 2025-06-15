@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAccount } from "wagmi";
+import { useAccount, useSendTransaction } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { parseEther } from "viem";
 
 type Bounty = {
   id: string;
@@ -85,7 +86,7 @@ function useBountyEntries(bountyId: string) {
 
 const BountiesPage = () => {
   const { user, profile } = useAuth();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
   const { bounties, loading: bountiesLoading, fetchBounties } = useBounties();
@@ -123,29 +124,43 @@ const BountiesPage = () => {
       toast({ title: "Sign in to join bounty" });
       return;
     }
-    // Already joined?
+
+    if (!isConnected || !address) {
+      toast({ title: "Connect wallet", description: "Please connect your wallet to join the bounty." });
+      return;
+    }
+
+    // Check if already joined
     const { data: existing, error } = await supabase
       .from("bounty_entries")
       .select("*")
       .eq("bounty_id", bounty.id)
       .eq("user_id", profile.id)
       .maybeSingle();
+    
     if (existing) {
       toast({ title: "Already joined", description: "You've already entered this bounty." });
       return;
     }
-    // Insert entry
+
+    // Insert entry first
     const { error: insertError } = await supabase.from("bounty_entries").insert({
       bounty_id: bounty.id,
       user_id: profile.id,
       wallet_address: profile.wallet_address,
       paid: false,
     });
+
     if (insertError) {
       toast({ title: "Error joining", description: insertError.message });
-    } else {
-      toast({ title: "Joined bounty", description: "Remember to pay by sending $2 (BASE) to the wallet below." });
+      return;
     }
+
+    // Show success and payment instruction
+    toast({ 
+      title: "Joined bounty!", 
+      description: `Now send ${bounty.entry_price} BASE to the admin wallet to complete your entry.` 
+    });
   };
 
   return (
@@ -229,7 +244,34 @@ function BountyCard({
   onDetail: () => void;
 }) {
   const { entries, loading, fetchEntries } = useBountyEntries(bounty.id);
+  const { address, isConnected } = useAccount();
+  const { sendTransaction } = useSendTransaction();
   const alreadyJoined = !!entries.find(e => e.user_id === userId);
+
+  const handleSendPayment = async () => {
+    if (!isConnected || !address) {
+      toast({ title: "Connect wallet", description: "Please connect your wallet first." });
+      return;
+    }
+
+    try {
+      await sendTransaction({
+        to: adminWallet as `0x${string}`,
+        value: parseEther(bounty.entry_price.toString()),
+      });
+      
+      toast({ 
+        title: "Payment sent!", 
+        description: "Your payment has been sent. It will be confirmed shortly." 
+      });
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({ 
+        title: "Payment failed", 
+        description: "There was an error sending your payment. Please try again." 
+      });
+    }
+  };
 
   return (
     <div className="bg-slate-800/80 rounded-xl border border-cyan-400/10 p-4 shadow-xl">
@@ -264,16 +306,27 @@ function BountyCard({
           </div>
         )}
       </div>
-      <div className="mt-2 flex flex-col md:flex-row gap-2">
-        <Button
-          size="sm"
-          className="flex-1 bg-cyan-700/80 text-white"
-          disabled={alreadyJoined}
-          onClick={onJoin}
-        >
-          {alreadyJoined ? "Already Joined" : "Join Bounty"}
-        </Button>
-        <div className="flex-1 flex flex-col">
+      <div className="mt-2 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            className="flex-1 bg-cyan-700/80 text-white"
+            disabled={alreadyJoined}
+            onClick={onJoin}
+          >
+            {alreadyJoined ? "Already Joined" : "Join Bounty"}
+          </Button>
+          {alreadyJoined && isConnected && (
+            <Button
+              size="sm"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSendPayment}
+            >
+              Send Payment
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-col">
           <span className="text-xs text-cyan-200">Pay {bounty.entry_price} BASE to:</span>
           <span className="text-xs font-mono text-green-300 border rounded px-1 py-1 bg-slate-900 whitespace-nowrap">
             {adminWallet}
