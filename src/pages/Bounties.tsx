@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { parseEther } from "viem";
-import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star } from "lucide-react";
+import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star, Calendar } from "lucide-react";
 
 // Visible to user as TASK, but database table used is "bounties"
 const ADMIN_WALLET = "0xC87646B4B86f92b7d39b6c128CA402f9662B7988";
@@ -21,7 +21,7 @@ type Task = {
   description: string | null;
   entry_price: number;
   start_time?: string | null;
-  end_time?: string | null;
+  end_time: string;
   winner_wallet?: string | null;
   mystery_prize?: string | null;
   created_at: string;
@@ -100,10 +100,11 @@ const TasksPage = () => {
   const [creating, setCreating] = useState(false);
   const [payingCreationFee, setPayingCreationFee] = useState(false);
 
-  const [form, setForm] = useState<{ title: string; description: string; entry_price: number }>({
+  const [form, setForm] = useState<{ title: string; description: string; entry_price: number; end_time: string }>({
     title: "",
     description: "",
     entry_price: 2,
+    end_time: "",
   });
 
   const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
@@ -111,6 +112,11 @@ const TasksPage = () => {
   const handlePayCreationFee = async () => {
     if (!isConnected || !address) {
       toast({ title: "Connect wallet", description: "Please connect your wallet to create a task." });
+      return;
+    }
+
+    if (!form.end_time) {
+      toast({ title: "End time required", description: "Please set when your task will end." });
       return;
     }
 
@@ -139,6 +145,11 @@ const TasksPage = () => {
       return;
     }
 
+    if (!form.end_time) {
+      toast({ title: "End time required", description: "Please set when your task will end." });
+      return;
+    }
+
     setCreating(true);
     // Use "bounties" table for backend, visible to user as "task"
     const { error } = await supabase.from("bounties").insert({
@@ -146,12 +157,13 @@ const TasksPage = () => {
       title: form.title,
       description: form.description,
       entry_price: Number(form.entry_price),
+      end_time: form.end_time,
     });
     if (error) {
       toast({ title: "Create failed", description: error.message });
     } else {
       toast({ title: "Task created!", description: "Your task is live! It will start once 10+ people join." });
-      setForm({ title: "", description: "", entry_price: 2 });
+      setForm({ title: "", description: "", entry_price: 2, end_time: "" });
       fetchTasks();
     }
     setCreating(false);
@@ -197,6 +209,12 @@ const TasksPage = () => {
       title: "Joined task!", 
       description: `Now send ${task.entry_price} USDC to complete your entry.` 
     });
+  };
+
+  // Get minimum datetime for datetime-local input (current time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    return now.toISOString().slice(0, 16);
   };
 
   return (
@@ -287,11 +305,28 @@ const TasksPage = () => {
                   onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
                 />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Task End Time *
+                </label>
+                <input
+                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                  required
+                  type="datetime-local"
+                  min={getMinDateTime()}
+                  value={form.end_time}
+                  onChange={e => setForm(s => ({ ...s, end_time: e.target.value }))}
+                />
+                <p className="text-xs text-slate-400">Set when your task competition will end</p>
+              </div>
               
               <Button 
                 type="button"
                 onClick={handlePayCreationFee}
-                disabled={creating || payingCreationFee || !form.title.trim()}
+                disabled={creating || payingCreationFee || !form.title.trim() || !form.end_time}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 
                          text-white font-semibold py-6 rounded-lg shadow-lg transition-all duration-200 
                          disabled:opacity-50 disabled:cursor-not-allowed"
@@ -386,6 +421,12 @@ function TaskCard({
   const canStart = entries.length >= 10;
   const taskStatus = canStart ? "Ready to Start!" : `${entries.length}/10 to start`;
 
+  // Format end time
+  const endTime = new Date(task.end_time);
+  const now = new Date();
+  const isExpired = endTime < now;
+  const timeRemaining = isExpired ? "Expired" : endTime.toLocaleString();
+
   const handleSendPayment = async () => {
     if (!isConnected || !address) {
       toast({ title: "Connect wallet", description: "Please connect your wallet first." });
@@ -436,6 +477,10 @@ function TaskCard({
             <Clock className="w-4 h-4" />
             <span>{new Date(task.created_at).toLocaleString()}</span>
           </div>
+          <div className={`flex items-center gap-2 ${isExpired ? 'text-red-400' : 'text-orange-400'}`}>
+            <Calendar className="w-4 h-4" />
+            <span>Ends: {timeRemaining}</span>
+          </div>
         </div>
 
         {/* Participants */}
@@ -475,12 +520,12 @@ function TaskCard({
             <Button
               size="sm"
               className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
-              disabled={alreadyJoined}
+              disabled={alreadyJoined || isExpired}
               onClick={onJoin}
             >
-              {alreadyJoined ? "Already Joined" : "Join Task"}
+              {isExpired ? "Task Ended" : alreadyJoined ? "Already Joined" : "Join Task"}
             </Button>
-            {alreadyJoined && isConnected && (
+            {alreadyJoined && isConnected && !isExpired && (
               <Button
                 size="sm"
                 className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 
