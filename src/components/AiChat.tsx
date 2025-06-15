@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,9 +22,10 @@ interface Message {
 
 interface AiChatProps {
   selectedToken?: TokenData | null;
+  inDialog?: boolean;
 }
 
-export const AiChat = ({ selectedToken }: AiChatProps) => {
+export const AiChat = ({ selectedToken, inDialog }: AiChatProps) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const savedMessages = localStorage.getItem('ai-chat-history');
@@ -124,11 +124,13 @@ export const AiChat = ({ selectedToken }: AiChatProps) => {
                     Clear
                 </Button>
             )}
-            <DrawerClose asChild>
+            {inDialog && (
+              <DrawerClose asChild>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-700 h-9 w-9">
                   <X className="w-4 h-4" />
                 </Button>
-            </DrawerClose>
+              </DrawerClose>
+            )}
         </div>
       </div>
       <ScrollArea className="flex-1">

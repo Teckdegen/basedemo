@@ -119,7 +119,7 @@ const TradingApp = () => {
                     </button>
                   </DialogTrigger>
                   <DialogContent className="p-0 max-w-lg w-full max-h-[80vh] flex flex-col">
-                    <AiChat selectedToken={selectedToken} />
+                    <AiChat selectedToken={selectedToken} inDialog />
                   </DialogContent>
                 </Dialog>
               </>
@@ -134,5 +134,4 @@ const TradingApp = () => {
     </div>
   );
 };
-
 export default TradingApp;
