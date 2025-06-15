@@ -109,17 +109,44 @@ const TokenTradePage = () => {
   };
 
   const handleTrade = async () => {
-    if (!tokenData) return;
+    if (!tokenData) {
+      toast({
+        title: "Error",
+        description: "Token data not available",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const tokensToTrade = parseFloat(tokenAmount);
     const baseToSpend = parseFloat(baseAmount);
+    
+    // Validation
+    if (isNaN(tokensToTrade) || tokensToTrade <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid token amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isNaN(baseToSpend) || baseToSpend <= 0) {
+      toast({
+        title: "Invalid Amount", 
+        description: "Please enter a valid BASE amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const pricePerToken = tokenData.price / basePrice.usd;
 
     if (tradeType === 'buy') {
       if (baseToSpend > baseBalance) {
         toast({
           title: "Insufficient Balance",
-          description: "You don't have enough BASE for this trade",
+          description: `You need ${baseToSpend.toFixed(4)} BASE but only have ${baseBalance.toFixed(4)} BASE`,
           variant: "destructive"
         });
         return;
@@ -128,7 +155,7 @@ const TokenTradePage = () => {
       if (!currentHolding || tokensToTrade > currentHolding.amount) {
         toast({
           title: "Insufficient Tokens",
-          description: "You don't have enough tokens to sell",
+          description: `You need ${tokensToTrade.toFixed(6)} ${tokenData.symbol} but only have ${currentHolding?.amount.toFixed(6) || 0} ${tokenData.symbol}`,
           variant: "destructive"
         });
         return;
@@ -136,6 +163,14 @@ const TokenTradePage = () => {
     }
 
     setLoading(true);
+    console.log('Executing trade:', {
+      type: tradeType,
+      tokensToTrade,
+      baseToSpend,
+      pricePerToken,
+      tokenAddress: tokenData.address
+    });
+
     try {
       // Calculate P&L data for sells
       let pnlData = {};
@@ -156,8 +191,8 @@ const TokenTradePage = () => {
         };
       }
 
-      // Replace with local executeTrade
-      const { error } = executeTrade(
+      // Execute the trade
+      const result = executeTrade(
         tokenData.address,
         tokenData.symbol,
         tokenData.name,
@@ -168,14 +203,16 @@ const TokenTradePage = () => {
         basePrice.usd
       );
 
-      if (error) {
+      console.log('Trade result:', result);
+
+      if (result.error) {
         toast({
           title: "Trade Failed",
-          description: "Failed to execute trade. Please try again.",
+          description: result.error,
           variant: "destructive"
         });
       } else {
-        // Prepare trade summary data
+        // Success - show trade summary
         const summaryData: TradeSummaryData = {
           tokenSymbol: tokenData.symbol,
           tokenName: tokenData.name,
@@ -191,11 +228,17 @@ const TokenTradePage = () => {
         setShowTradeSummary(true);
         setBaseAmount('');
         setTokenAmount('');
+
+        toast({
+          title: "Trade Successful!",
+          description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tokensToTrade.toFixed(6)} ${tokenData.symbol} for ${baseToSpend.toFixed(4)} BASE`,
+        });
       }
     } catch (error) {
+      console.error('Trade execution error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during the trade",
         variant: "destructive"
       });
     } finally {
