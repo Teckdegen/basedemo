@@ -1,12 +1,13 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccount, useSendTransaction } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { parseEther } from "viem";
+import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star } from "lucide-react";
 
 type Bounty = {
   id: string;
@@ -202,72 +203,165 @@ const BountiesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-4">
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="flex items-center mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/wallet")} className="mr-2">
-            ← Back to Wallet
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-8">
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center mb-8 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/wallet")} 
+            className="mr-4 text-white hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Wallet
           </Button>
-          <h1 className="text-3xl font-bold text-white">Bounties</h1>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg">
+              <Trophy className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-white">Bounties</h1>
+              <p className="text-cyan-300">Compete and win prizes</p>
+            </div>
+          </div>
         </div>
 
-        {/* Anyone can create bounties now */}
-        <form className="bg-white/5 p-4 mb-8 rounded-2xl border border-cyan-700/20 shadow"
-          onSubmit={(e) => e.preventDefault()}>
-          <h2 className="text-xl font-bold text-cyan-300 mb-2">Create Bounty</h2>
-          <p className="text-sm text-yellow-400 mb-3">💡 Pay {BOUNTY_CREATION_FEE} BASE to host • Starts when 10+ people join</p>
-          <input
-            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
-            required
-            placeholder="Title"
-            value={form.title}
-            onChange={e => setForm(s => ({ ...s, title: e.target.value }))}
-          />
-          <textarea
-            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
-            placeholder="Description"
-            value={form.description}
-            onChange={e => setForm(s => ({ ...s, description: e.target.value }))}
-          />
-          <input
-            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-4"
-            required
-            type="number"
-            min={0.01}
-            step={0.01}
-            placeholder="Entry price (BASE)"
-            value={form.entry_price}
-            onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
-          />
-          <Button 
-            type="button"
-            onClick={handlePayCreationFee}
-            disabled={creating || payingCreationFee || !form.title.trim()}
-            className="w-full bg-green-600 hover:bg-green-700"
-          >
-            {payingCreationFee ? "Sending Payment..." : creating ? "Creating..." : `Pay ${BOUNTY_CREATION_FEE} BASE & Create Bounty`}
-          </Button>
-        </form>
+        {/* Create Bounty Card */}
+        <Card className="mb-8 bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-cyan-500/20 shadow-2xl backdrop-blur-sm animate-slide-up">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-white">Create New Bounty</span>
+            </CardTitle>
+            <div className="flex items-center gap-2 text-yellow-400 bg-yellow-400/10 p-3 rounded-lg border border-yellow-400/20">
+              <Zap className="w-5 h-5" />
+              <span className="text-sm font-medium">
+                Pay {BOUNTY_CREATION_FEE} BASE to host • Starts when 10+ people join
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Bounty Title
+                </label>
+                <input
+                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all
+                           placeholder:text-slate-400"
+                  required
+                  placeholder="Enter an exciting bounty title..."
+                  value={form.title}
+                  onChange={e => setForm(s => ({ ...s, title: e.target.value }))}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-cyan-300">Description</label>
+                <textarea
+                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all
+                           placeholder:text-slate-400 min-h-[100px] resize-none"
+                  placeholder="Describe your bounty challenge..."
+                  value={form.description}
+                  onChange={e => setForm(s => ({ ...s, description: e.target.value }))}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Entry Price (BASE)
+                </label>
+                <input
+                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                  required
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  placeholder="2.0"
+                  value={form.entry_price}
+                  onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
+                />
+              </div>
+              
+              <Button 
+                type="button"
+                onClick={handlePayCreationFee}
+                disabled={creating || payingCreationFee || !form.title.trim()}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 
+                         text-white font-semibold py-6 rounded-lg shadow-lg transition-all duration-200 
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {payingCreationFee ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending Payment...
+                  </div>
+                ) : creating ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Pay {BOUNTY_CREATION_FEE} BASE & Create Bounty
+                  </div>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-        {bountiesLoading ? (
-          <div className="text-white">Loading bounties...</div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {bounties.length === 0 && (
-              <div className="text-cyan-200 opacity-80">No bounties yet. Create the first one!</div>
-            )}
-            {bounties.map(bounty => (
-              <BountyCard
-                key={bounty.id}
-                bounty={bounty}
-                userId={profile?.id}
-                adminWallet={ADMIN_WALLET}
-                onJoin={() => handleJoinBounty(bounty)}
-                onDetail={() => navigate(`/bounties/${bounty.id}`)}
-              />
-            ))}
+        {/* Bounties List */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Users className="w-6 h-6 text-cyan-400" />
+            <h2 className="text-2xl font-bold text-white">Active Bounties</h2>
           </div>
-        )}
+          
+          {bountiesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-3 text-white">
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Loading bounties...
+              </div>
+            </div>
+          ) : bounties.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50 text-center py-12">
+              <CardContent>
+                <Trophy className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <p className="text-cyan-200 text-lg">No bounties yet.</p>
+                <p className="text-slate-400">Create the first one above!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6">
+              {bounties.map((bounty, index) => (
+                <div 
+                  key={bounty.id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <BountyCard
+                    bounty={bounty}
+                    userId={profile?.id}
+                    adminWallet={ADMIN_WALLET}
+                    onJoin={() => handleJoinBounty(bounty)}
+                    onDetail={() => navigate(`/bounties/${bounty.id}`)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -320,71 +414,109 @@ function BountyCard({
   };
 
   return (
-    <div className="bg-slate-800/80 rounded-xl border border-cyan-400/10 p-4 shadow-xl">
-      <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={onDetail}>
-        <span className="block text-xl font-semibold text-cyan-200">{bounty.title}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">{bounty.entry_price} BASE</span>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${canStart ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
-            {bountyStatus}
-          </span>
-        </div>
-      </div>
-      <div className="text-white/90 mb-2">{bounty.description}</div>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs text-blue-400">
-          Created by: {bounty.created_by === adminWallet ? "Admin" : `${bounty.created_by.substring(0, 8)}...`}
-        </span>
-        <span className="text-xs text-slate-500 ml-4">{new Date(bounty.created_at).toLocaleString()}</span>
-      </div>
-      <div className="mb-2">
-        {loading ? (
-          <span className="text-xs text-slate-300">Loading entries...</span>
-        ) : (
-          <div>
-            <span className="text-xs text-cyan-300">Participants ({entries.length}):</span>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {entries.map(entry => (
-                <span
-                  key={entry.id}
-                  className="text-[10px] px-2 py-[2px] border border-cyan-500/40 rounded bg-cyan-950 text-cyan-300"
-                  title={entry.wallet_address}
-                >
-                  {entry.wallet_address.substring(0, 8)}...
-                </span>
-              ))}
+    <Card className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-cyan-400/20 shadow-xl 
+                   hover:shadow-2xl hover:border-cyan-400/40 transition-all duration-300 
+                   hover:transform hover:scale-[1.02] backdrop-blur-sm">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4 cursor-pointer" onClick={onDetail}>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-white mb-2 hover:text-cyan-300 transition-colors">
+              {bounty.title}
+            </h3>
+            <p className="text-slate-300 mb-3 leading-relaxed">{bounty.description}</p>
+          </div>
+          <div className="flex flex-col items-end gap-2 ml-4">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 
+                          px-4 py-2 rounded-full shadow-lg">
+              <DollarSign className="w-4 h-4 text-white" />
+              <span className="text-white font-bold">{bounty.entry_price} BASE</span>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
+              canStart 
+                ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+            }`}>
+              {bountyStatus}
             </div>
           </div>
-        )}
-      </div>
-      <div className="mt-2 flex flex-col gap-2">
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            className="flex-1 bg-cyan-700/80 text-white"
-            disabled={alreadyJoined}
-            onClick={onJoin}
-          >
-            {alreadyJoined ? "Already Joined" : "Join Bounty"}
-          </Button>
-          {alreadyJoined && isConnected && (
-            <Button
-              size="sm"
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleSendPayment}
-            >
-              Send Payment
-            </Button>
+        </div>
+
+        <div className="flex items-center gap-4 mb-4 text-sm">
+          <div className="flex items-center gap-2 text-blue-400">
+            <span>Created by:</span>
+            <span className="font-mono">
+              {bounty.created_by === adminWallet ? "Admin" : `${bounty.created_by.substring(0, 8)}...`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-500">
+            <Clock className="w-4 h-4" />
+            <span>{new Date(bounty.created_at).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Participants */}
+        <div className="mb-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-slate-300">
+              <div className="w-4 h-4 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
+              Loading participants...
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-medium text-cyan-300">
+                  Participants ({entries.length})
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {entries.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="px-3 py-1 bg-cyan-950/50 border border-cyan-500/30 rounded-full 
+                             text-xs text-cyan-300 font-mono"
+                    title={entry.wallet_address}
+                  >
+                    {entry.wallet_address.substring(0, 8)}...
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-        <div className="flex flex-col">
-          <span className="text-xs text-cyan-200">Pay {bounty.entry_price} BASE to:</span>
-          <span className="text-xs font-mono text-green-300 border rounded px-1 py-1 bg-slate-900 whitespace-nowrap">
-            {adminWallet}
-          </span>
+
+        {/* Actions */}
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <Button
+              size="sm"
+              className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
+              disabled={alreadyJoined}
+              onClick={onJoin}
+            >
+              {alreadyJoined ? "Already Joined" : "Join Bounty"}
+            </Button>
+            {alreadyJoined && isConnected && (
+              <Button
+                size="sm"
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 
+                         hover:from-green-500 hover:to-emerald-500 text-white transition-all"
+                onClick={handleSendPayment}
+              >
+                Send Payment
+              </Button>
+            )}
+          </div>
+          
+          <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+            <div className="text-xs text-cyan-300 mb-1">Send payment to:</div>
+            <div className="text-xs font-mono text-green-400 break-all bg-slate-800/50 p-2 rounded border">
+              {adminWallet}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
