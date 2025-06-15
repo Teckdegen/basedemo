@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -28,12 +27,6 @@ const TradingApp = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
   useEffect(() => {
-    if (!isConnected) {
-      navigate('/');
-    }
-  }, [isConnected, navigate]);
-
-  useEffect(() => {
     if (user && profile && !profile.username && !authLoading) {
       setShowUsernameOnboard(true);
     }
@@ -47,7 +40,7 @@ const TradingApp = () => {
     setSelectedToken(token);
   };
 
-  if (!isConnected || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>

@@ -6,8 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Web3Provider } from "@/providers/Web3Provider";
 import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import TradingApp from "./pages/TradingApp";   // Renamed!
+import TradingApp from "./pages/TradingApp";
 import Wallet from "./pages/Wallet";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
@@ -26,8 +25,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/app" element={<TradingApp />} />
+              <Route path="/" element={<TradingApp />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
@@ -43,4 +41,3 @@ const App = () => (
 );
 
 export default App;
-

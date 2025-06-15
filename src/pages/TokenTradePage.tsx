@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useToast } from '@/hooks/use-toast';
 import TokenChart from '@/components/TokenChart';
@@ -41,7 +39,6 @@ interface TradeSummaryData {
 const TokenTradePage = () => {
   const { tokenAddress } = useParams<{ tokenAddress: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const {
     baseBalance,
     holdings,
@@ -64,11 +61,6 @@ const TokenTradePage = () => {
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
     // Load token data from localStorage or fetch from API
     const savedTokens = localStorage.getItem('scannedTokens');
     if (savedTokens && tokenAddress) {
@@ -78,7 +70,7 @@ const TokenTradePage = () => {
         setTokenData(token);
       }
     }
-  }, [user, tokenAddress, navigate]);
+  }, [tokenAddress]);
 
   // Calculate token amount when BASE amount changes (for buy)
   useEffect(() => {
@@ -266,7 +258,7 @@ const TokenTradePage = () => {
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-semibold mb-4">Token Not Found</h2>
             <p className="text-gray-400 mb-4">The requested token data could not be loaded.</p>
-            <Button onClick={() => navigate('/app')} variant="outline">
+            <Button onClick={() => navigate('/')} variant="outline">
               Back to Trading
             </Button>
           </CardContent>
@@ -288,7 +280,7 @@ const TokenTradePage = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/app')}
+                onClick={() => navigate('/')}
                 className="flex items-center space-x-2 text-white hover:bg-white/10"
               >
                 <ArrowLeft className="w-4 h-4" />
