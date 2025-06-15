@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { parseEther } from "viem";
 import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star } from "lucide-react";
 
-// Change all "bounty"/"bounties" references to "task"/"tasks"
+// Visible to user as TASK, but database table used is "bounties"
 const ADMIN_WALLET = "0xC87646B4B86f92b7d39b6c128CA402f9662B7988";
 const TASK_CREATION_FEE_USDC = 1; // $1 USDC to create a task
 
@@ -28,7 +29,7 @@ type Task = {
 
 type TaskEntry = {
   id: string;
-  task_id: string;
+  bounty_id: string; // backend column name remains bounty_id for now!
   user_id: string;
   wallet_address: string;
   paid: boolean;
@@ -36,15 +37,15 @@ type TaskEntry = {
   created_at: string;
 };
 
-// ... keep existing hooks, renaming variables and functions ...
 function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTasks = async () => {
     setLoading(true);
+    // Use "bounties" as the backend table name
     const { data, error } = await supabase
-      .from("tasks")
+      .from("bounties")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
@@ -62,19 +63,20 @@ function useTasks() {
   return { tasks, loading, fetchTasks };
 }
 
-function useTaskEntries(taskId: string) {
+function useTaskEntries(bountyId: string) {
   const [entries, setEntries] = useState<TaskEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchEntries = async () => {
     setLoading(true);
+    // Use "bounty_entries" as backend table name, filter by bounty_id
     const { data, error } = await supabase
-      .from("task_entries")
+      .from("bounty_entries")
       .select("*")
-      .eq("task_id", taskId)
+      .eq("bounty_id", bountyId)
       .order("created_at", { ascending: true });
     if (error) {
-      toast({ title: "Error loading entries", description: error.message });
+      toast({ title: "Error loading participants", description: error.message });
     } else {
       setEntries(data || []);
     }
@@ -82,8 +84,8 @@ function useTaskEntries(taskId: string) {
   };
 
   useEffect(() => {
-    if (taskId) fetchEntries();
-  }, [taskId]);
+    if (bountyId) fetchEntries();
+  }, [bountyId]);
 
   return { entries, loading, fetchEntries };
 }
@@ -114,8 +116,7 @@ const TasksPage = () => {
 
     setPayingCreationFee(true);
     try {
-      // Simulate a $1 USDC payment. In production, integrate a USDC smart contract logic here.
-      // For now, just show a toast.
+      // Simulate a $1 USDC payment. Integrate USDC smart contract in production.
       toast({ 
         title: "Payment sent!", 
         description: "$1 USDC fee paid! You can now create your task." 
@@ -139,7 +140,8 @@ const TasksPage = () => {
     }
 
     setCreating(true);
-    const { error } = await supabase.from("tasks").insert({
+    // Use "bounties" table for backend, visible to user as "task"
+    const { error } = await supabase.from("bounties").insert({
       created_by: profile.wallet_address,
       title: form.title,
       description: form.description,
@@ -166,10 +168,11 @@ const TasksPage = () => {
       return;
     }
 
+    // Use "bounty_entries"
     const { data: existing, error } = await supabase
-      .from("task_entries")
+      .from("bounty_entries")
       .select("*")
-      .eq("task_id", task.id)
+      .eq("bounty_id", task.id)
       .eq("user_id", profile.id)
       .maybeSingle();
     
@@ -178,8 +181,8 @@ const TasksPage = () => {
       return;
     }
 
-    const { error: insertError } = await supabase.from("task_entries").insert({
-      task_id: task.id,
+    const { error: insertError } = await supabase.from("bounty_entries").insert({
+      bounty_id: task.id,
       user_id: profile.id,
       wallet_address: profile.wallet_address,
       paid: false,
@@ -361,7 +364,7 @@ const TasksPage = () => {
   );
 };
 
-// TaskCard component (was BountyCard)
+// TaskCard component
 function TaskCard({
   task,
   userId,
@@ -388,8 +391,6 @@ function TaskCard({
       toast({ title: "Connect wallet", description: "Please connect your wallet first." });
       return;
     }
-
-    // Simulate sending $entry_price USDC. Integrate USDC transfer logic here in production.
     toast({ 
       title: "Payment sent!", 
       description: "Your payment in USDC has been sent. It will be confirmed shortly." 
