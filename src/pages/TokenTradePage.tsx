@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import { useToast } from '@/hooks/use-toast';
 import TokenChart from '@/components/TokenChart';

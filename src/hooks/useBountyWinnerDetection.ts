@@ -39,6 +39,7 @@ export function useBountyWinnerDetection(bountyId: string) {
   const [userPerformances, setUserPerformances] = useState<UserPerformance[]>([]);
   const [winner, setWinner] = useState<UserPerformance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canStart, setCanStart] = useState(false);
 
   const fetchBountyData = async () => {
     setLoading(true);
@@ -72,9 +73,13 @@ export function useBountyWinnerDetection(bountyId: string) {
     }
 
     setEntries(entriesData || []);
+    
+    // Check if bounty can start (needs 10+ paid entries)
+    const paidEntries = entriesData?.length || 0;
+    setCanStart(paidEntries >= 10);
 
-    // Calculate performance for each user
-    if (entriesData && entriesData.length > 0) {
+    // Calculate performance for each user only if bounty can start
+    if (entriesData && entriesData.length >= 10) {
       await calculateUserPerformances(entriesData, bountyData);
     }
 
@@ -129,6 +134,24 @@ export function useBountyWinnerDetection(bountyId: string) {
     };
   };
 
+  const startBounty = async () => {
+    if (!bounty || !canStart) {
+      return { success: false, error: 'Bounty cannot start - need 10+ paid entries' };
+    }
+
+    const { error } = await supabase
+      .from('bounties')
+      .update({ start_time: new Date().toISOString() })
+      .eq('id', bountyId);
+
+    if (error) {
+      console.error('Error starting bounty:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  };
+
   const declareWinner = async () => {
     if (!winner || !bounty) return;
 
@@ -157,6 +180,8 @@ export function useBountyWinnerDetection(bountyId: string) {
     userPerformances,
     winner,
     loading,
+    canStart,
+    startBounty,
     declareWinner,
     refreshData: fetchBountyData
   };
