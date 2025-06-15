@@ -10,6 +10,7 @@ import { useBasePrice } from '@/hooks/useBasePrice';
 import { useToast } from '@/hooks/use-toast';
 import TokenChart from '@/components/TokenChart';
 import TradeSummary from '@/components/TradeSummary';
+import { useLocalWallet } from "@/hooks/useLocalWallet";
 
 interface TokenData {
   address: string;
@@ -39,7 +40,13 @@ const TokenTradePage = () => {
   const { tokenAddress } = useParams<{ tokenAddress: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, holdings, executeTrade, loading: dataLoading } = useSupabaseData();
+  const {
+    baseBalance,
+    holdings,
+    trades,
+    executeTrade,
+    reset: resetLocalWallet,
+  } = useLocalWallet();
   const { priceData: basePrice, forceRefresh: refreshBasePrice } = useBasePrice();
   const { toast } = useToast();
   
@@ -102,14 +109,14 @@ const TokenTradePage = () => {
   };
 
   const handleTrade = async () => {
-    if (!tokenData || !profile) return;
+    if (!tokenData) return;
 
     const tokensToTrade = parseFloat(tokenAmount);
     const baseToSpend = parseFloat(baseAmount);
     const pricePerToken = tokenData.price / basePrice.usd;
 
     if (tradeType === 'buy') {
-      if (baseToSpend > profile.base_balance) {
+      if (baseToSpend > baseBalance) {
         toast({
           title: "Insufficient Balance",
           description: "You don't have enough BASE for this trade",
@@ -138,7 +145,7 @@ const TokenTradePage = () => {
         const realizedPnL = baseToSpend - investedInSoldTokens;
         const realizedPnLPercent = investedInSoldTokens > 0 ? (realizedPnL / investedInSoldTokens) * 100 : 0;
         const remainingAmount = currentHolding.amount - tokensToTrade;
-        
+
         pnlData = {
           totalInvested: investedInSoldTokens,
           totalReceived: baseToSpend,
@@ -149,7 +156,8 @@ const TokenTradePage = () => {
         };
       }
 
-      const { error } = await executeTrade(
+      // Replace with local executeTrade
+      const { error } = executeTrade(
         tokenData.address,
         tokenData.symbol,
         tokenData.name,
@@ -157,11 +165,7 @@ const TokenTradePage = () => {
         tokensToTrade,
         pricePerToken,
         baseToSpend,
-        basePrice.usd,
-        async () => {
-          // Refresh prices after trade
-          await refreshBasePrice();
-        }
+        basePrice.usd
       );
 
       if (error) {
@@ -250,7 +254,7 @@ const TokenTradePage = () => {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
               <span className="text-cyan-400 text-sm font-medium">
-                Balance: {(profile?.base_balance ?? 1.0).toFixed(4)} BASE
+                Balance: {baseBalance.toFixed(4)} BASE
               </span>
             </div>
           </div>
@@ -424,7 +428,6 @@ const TokenTradePage = () => {
                   }`}
                   disabled={
                     loading || 
-                    dataLoading || 
                     (tradeType === 'buy' && (!baseAmount || parseFloat(baseAmount) <= 0)) ||
                     (tradeType === 'sell' && (!tokenAmount || parseFloat(tokenAmount) <= 0))
                   }
