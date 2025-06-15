@@ -14,9 +14,11 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
-          end_time: string
+          duration_hours: number
+          end_time: string | null
           entry_price: number
           id: string
+          min_participants: number
           mystery_prize: string | null
           start_time: string | null
           title: string
@@ -26,9 +28,11 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
-          end_time: string
+          duration_hours: number
+          end_time?: string | null
           entry_price: number
           id?: string
+          min_participants?: number
           mystery_prize?: string | null
           start_time?: string | null
           title: string
@@ -38,9 +42,11 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
-          end_time?: string
+          duration_hours?: number
+          end_time?: string | null
           entry_price?: number
           id?: string
+          min_participants?: number
           mystery_prize?: string | null
           start_time?: string | null
           title?: string
