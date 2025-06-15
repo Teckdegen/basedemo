@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -6,41 +7,21 @@ import Portfolio from '@/components/Portfolio';
 import TradeHistory from '@/components/TradeHistory';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, LogOut, TrendingUp } from 'lucide-react';
-import { useBasePrice } from '@/hooks/useBasePrice';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
-// Removed faulty image import here
+import { WalletCard } from "@/components/ui/WalletCard";
 
-import { WalletCard } from "@/components/ui/WalletCard"; // Our new card component
+// === STATIC WALLET LOGIC ===
+const STATIC_BALANCE = 1500;
+const STATIC_USD = 1500;
 
 const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
-  const { priceData: basePrice, loading: priceLoading, refreshPrice } = useBasePrice();
   const { user, signOut, loading: authLoading } = useAuth();
   const { holdings, trades, profile, loading: dataLoading } = useSupabaseData();
   const isMobile = useIsMobile();
-
-  // DEBUG LOGS: see what profile looks like
-  React.useEffect(() => {
-    console.log('[DEBUG][Wallet] profile fetched from useSupabaseData:', profile);
-  }, [profile]);
-
-  useEffect(() => {
-    if (!isConnected) {
-      navigate('/');
-    }
-  }, [isConnected, navigate]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const handleRefreshPrice = () => {
-    refreshPrice(true);
-  };
 
   // Convert holdings to legacy format for Portfolio component
   const portfolioData = holdings.reduce((acc, holding) => {
@@ -54,7 +35,7 @@ const Wallet = () => {
       address: holding.token_address,
       name: holding.token_name,
       symbol: holding.token_symbol,
-      price: 0, // This would need to be fetched from current market data
+      price: 1, // 1 USDC == 1 USD by definition now
       priceChange24h: 0
     };
     return acc;
@@ -82,7 +63,6 @@ const Wallet = () => {
     );
   }
 
-  const currentBalance = profile?.base_balance ?? 1.0;
   const mainContentAnim = isMobile ? "animate-slide-in-right" : "animate-fade-in";
 
   return (
@@ -132,31 +112,23 @@ const Wallet = () => {
         <div className="flex-shrink-0">
           <div className="rounded-xl px-4 py-2 bg-gradient-to-br from-slate-800/80 to-blue-900/70 flex flex-col items-center min-w-[110px] shadow border border-blue-600/30">
             <span className="text-cyan-400 text-xs font-medium leading-tight whitespace-nowrap">
-              Balance: {currentBalance.toFixed(4)}
+              Balance: {STATIC_BALANCE.toFixed(2)}
             </span>
-            <span className="text-white text-xs font-semibold" style={{ letterSpacing: 0.2 }}>BASE</span>
+            <span className="text-white text-xs font-semibold" style={{ letterSpacing: 0.2 }}>USDC</span>
           </div>
         </div>
-        {/* BASE price */}
+        {/* USDC price / hardcoded */}
         <div className="flex-shrink-0 ml-1">
           <div className="rounded-xl px-4 py-2 bg-gradient-to-br from-slate-800/80 to-blue-900/70 flex items-center gap-2 min-w-[120px] shadow border border-green-400/20">
-            <span className="text-green-400 text-xs font-bold">BASE:</span>
-            <span className="text-green-300 text-xs font-extrabold">${basePrice.usd.toFixed(2)}</span>
-            <button 
-              onClick={handleRefreshPrice} 
-              disabled={priceLoading}
-              className="text-white/60 hover:text-white transition-colors"
-              aria-label="Refresh BASE price"
-            >
-              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : ''}`} />
-            </button>
+            <span className="text-green-400 text-xs font-bold">USDC:</span>
+            <span className="text-green-300 text-xs font-extrabold">${STATIC_USD.toFixed(2)}</span>
           </div>
         </div>
         {/* Sign Out */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleSignOut}
+          onClick={async() => { await signOut(); navigate('/'); }}
           className="text-white hover:bg-white/10 rounded-xl px-2"
           aria-label="Sign out"
         >
@@ -179,11 +151,12 @@ const Wallet = () => {
               <span className="text-lg font-bold text-white drop-shadow">Portfolio</span>
             </div>
             <Portfolio 
-              balance={currentBalance} 
+              balance={STATIC_BALANCE} 
               portfolio={portfolioData} 
               tokenDetails={tokenDetails}
-              basePrice={basePrice.usd}
+              basePrice={1} // 1 USDC = $1
               onTokenClick={(tokenAddress) => navigate(`/trade/${tokenAddress}`)}
+              coinLabel="USDC"
             />
           </WalletCard>
           {/* Trade History Card */}

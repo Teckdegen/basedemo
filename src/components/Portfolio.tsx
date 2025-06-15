@@ -19,13 +19,21 @@ interface PortfolioProps {
   tokenDetails: Record<string, TokenData>;
   basePrice: number;
   onTokenClick?: (tokenAddress: string) => void;
+  coinLabel?: string;
 }
 
-const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails, basePrice, onTokenClick }) => {
+const Portfolio: React.FC<PortfolioProps> = ({
+  balance,
+  portfolio,
+  tokenDetails,
+  basePrice,
+  onTokenClick,
+  coinLabel = "USDC"
+}) => {
   const navigate = useNavigate();
   const portfolioEntries = Object.entries(portfolio).filter(([_, amount]) => amount > 0);
 
-  // Calculate the total value of user tokens (excluding base balance)
+  // Since everything is static, no need to calculate with API data
   const totalPortfolioValue = portfolioEntries.reduce((total, [address, amount]) => {
     const tokenData = tokenDetails[address];
     if (tokenData) {
@@ -34,22 +42,15 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
     return total;
   }, 0);
 
-  // Correct: actual starting balance from the backend, or fallback to 1.0
-  // If the user has NO trades and totalBalance is close to the starting balance, PNL is zero!
-  const startingBase = 1.0;
-
-  // Ownership: total base including held tokens
+  // For display, the starting balance is 1500 USDC (~$1500 USD)
+  const startingBase = 1500;
   const totalValue = balance + totalPortfolioValue;
-
-  // If no trades/tokens, don't show a negative one. Show zero PNL.
   const isBrandNewUser = totalValue.toFixed(4) === startingBase.toFixed(4) && portfolioEntries.length === 0;
   const pnl = isBrandNewUser ? 0 : (totalValue - startingBase);
   const pnlPercentage = isBrandNewUser ? 0 : (pnl / startingBase) * 100;
 
   const handleTokenClick = (address: string) => {
-    if (onTokenClick) {
-      onTokenClick(address);
-    }
+    if (onTokenClick) onTokenClick(address);
   };
 
   return (
@@ -79,32 +80,32 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
           <div className="bg-gradient-to-r from-slate-700/50 to-slate-800/50 p-4 sm:p-6 rounded-2xl backdrop-blur-sm">
             <div className="text-center space-y-2 sm:space-y-3">
               <div className="text-sm text-slate-400 font-medium">Total Portfolio Value</div>
-              <div className="text-2xl sm:text-4xl font-bold text-white">{totalValue.toFixed(4)} BASE</div>
-              <div className="text-slate-300">${(totalValue * basePrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</div>
+              <div className="text-2xl sm:text-4xl font-bold text-white">{totalValue.toFixed(4)} {coinLabel}</div>
+              <div className="text-slate-300">${(totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</div>
               <div className={`text-base sm:text-lg font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} BASE ({pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
+                {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} {coinLabel} ({pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
               </div>
               {isBrandNewUser && (
-                <div className="mt-2 text-xs text-cyan-400">Welcome! Your account is funded with 1.0 BASE to get started.</div>
+                <div className="mt-2 text-xs text-cyan-400">All users receive 1500 USDC to start trading!</div>
               )}
             </div>
           </div>
 
-          {/* BASE Balance */}
+          {/* Balance */}
           <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs sm:text-sm">BASE</span>
+                  <span className="text-white font-bold text-xs sm:text-sm">{coinLabel}</span>
                 </div>
                 <div>
-                  <div className="font-semibold text-white text-base sm:text-lg">Base</div>
-                  <div className="text-sm text-slate-400">BASE</div>
+                  <div className="font-semibold text-white text-base sm:text-lg">{coinLabel}</div>
+                  <div className="text-sm text-slate-400">{coinLabel}</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-white text-base sm:text-lg">{balance.toFixed(4)} BASE</div>
-                <div className="text-sm text-slate-400">${(balance * basePrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div className="font-bold text-white text-base sm:text-lg">{balance.toFixed(4)} {coinLabel}</div>
+                <div className="text-sm text-slate-400">${balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               </div>
             </div>
           </div>
@@ -127,7 +128,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
               </div>
               <div className="text-slate-300 font-medium mb-2">
                 {isBrandNewUser
-                  ? "No tokens yet! Get started by trading your free 1.0 BASE."
+                  ? "No tokens yet! Get started by trading your free 1500 USDC."
                   : "No tokens yet"}
               </div>
               <div className="text-sm text-slate-500 mb-4 sm:mb-6">Start trading to build your portfolio</div>
@@ -189,7 +190,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-white">{valueInBase.toFixed(4)} BASE</div>
+                        <div className="font-semibold text-white">{valueInBase.toFixed(4)} {coinLabel}</div>
                         <div className="text-sm text-slate-400">${tokenData.price.toFixed(6)}</div>
                         <div className={`text-xs font-medium ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {tokenData.priceChange24h >= 0 ? '+' : ''}{tokenData.priceChange24h.toFixed(2)}%
@@ -208,4 +209,3 @@ const Portfolio: React.FC<PortfolioProps> = ({ balance, portfolio, tokenDetails,
 };
 
 export default Portfolio;
-
