@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -8,6 +9,7 @@ import { AiChat } from '@/components/AiChat';
 import { Button } from '@/components/ui/button';
 import { Wallet, User, TrendingUp, MessageCircle, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import UsernameOnboard from '@/components/UsernameOnboard';
 import MobileNav from '@/components/MobileNav';
@@ -21,6 +23,7 @@ const TradingApp = () => {
   const navigate = useNavigate();
   const { isConnected } = useAccount();
   const { user, profile, loading: authLoading } = useAuth();
+  const { profile: supabaseProfile } = useSupabaseData();
   const isMobile = useIsMobile();
   const [showUsernameOnboard, setShowUsernameOnboard] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
@@ -84,6 +87,15 @@ const TradingApp = () => {
                   <TrendingUp className="w-4 h-4" />
                   PNL
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/bounties')}
+                  className="flex items-center gap-2 text-white hover:bg-white/10"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Tasks
+                </Button>
               </div>
             )}
           </div>
@@ -92,6 +104,12 @@ const TradingApp = () => {
               <div className="flex items-center gap-2 px-3 py-1 bg-cyan-500/20 rounded-full border border-cyan-400/30">
                 <User className="w-4 h-4 text-cyan-300" />
                 <span className="text-cyan-200 text-sm font-medium">{profile.username}</span>
+              </div>
+            )}
+            {supabaseProfile && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-400/30">
+                <Wallet className="w-4 h-4 text-green-300" />
+                <span className="text-green-200 text-sm font-medium">{supabaseProfile.base_balance.toFixed(2)} USDC</span>
               </div>
             )}
             <ConnectButton />

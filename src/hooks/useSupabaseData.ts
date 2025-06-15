@@ -7,6 +7,7 @@ interface UserProfile {
   id: string;
   wallet_address: string | null;
   base_balance: number;
+  username: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,16 +63,13 @@ export const useSupabaseData = () => {
     try {
       console.log('Fetching profile for user:', user.id);
       
-      // First, try to fetch existing profile
+      // Fetch or create profile
       let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
-      console.log('Profile query result:', { profileData, profileError });
-
-      // If no profile exists and no error, create one
       if (!profileData && !profileError) {
         console.log('No profile found, creating new profile for user:', user.id);
         
@@ -79,7 +77,7 @@ export const useSupabaseData = () => {
           .from('profiles')
           .insert({
             id: user.id,
-            base_balance: 1.0,
+            base_balance: 1500.0,
             wallet_address: null
           })
           .select()
@@ -87,10 +85,7 @@ export const useSupabaseData = () => {
 
         if (insertError) {
           console.error('Error creating profile:', insertError);
-          
-          // If insert failed due to unique constraint, try to fetch again
           if (insertError.code === '23505') {
-            console.log('Profile might exist, trying to fetch again...');
             const { data: retryProfile, error: retryError } = await supabase
               .from('profiles')
               .select('*')
@@ -99,40 +94,30 @@ export const useSupabaseData = () => {
             
             if (retryProfile && !retryError) {
               profileData = retryProfile;
-              console.log('Found existing profile on retry:', retryProfile);
-            } else {
-              console.error('Still unable to fetch profile:', retryError);
             }
           }
         } else {
           profileData = newProfile;
-          console.log('Created new profile successfully:', newProfile);
         }
-      } else if (profileError) {
-        console.error('Error fetching profile:', profileError);
       }
 
-      // Ensure we have a valid profile
       if (profileData) {
-        // Make sure base_balance is a number and has a default value
         const validProfile = {
           ...profileData,
-          base_balance: profileData.base_balance ? Number(profileData.base_balance) : 1.0
+          base_balance: profileData.base_balance ? Number(profileData.base_balance) : 1500.0
         };
         setProfile(validProfile);
         console.log('Profile set successfully:', validProfile);
       } else {
-        console.error('No profile data available after all attempts');
-        // Create a fallback profile in state only
         const fallbackProfile = {
           id: user.id,
           wallet_address: null,
-          base_balance: 1.0,
+          base_balance: 1500.0,
+          username: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
         setProfile(fallbackProfile);
-        console.log('Using fallback profile:', fallbackProfile);
       }
 
       // Fetch holdings
@@ -146,7 +131,6 @@ export const useSupabaseData = () => {
         console.error('Error fetching holdings:', holdingsError);
       } else if (holdingsData) {
         setHoldings(holdingsData);
-        console.log('Holdings set:', holdingsData);
       }
 
       // Fetch trades
@@ -164,22 +148,9 @@ export const useSupabaseData = () => {
           trade_type: trade.trade_type as 'buy' | 'sell'
         }));
         setTrades(typedTrades);
-        console.log('Trades set:', typedTrades);
       }
     } catch (error) {
       console.error('Error in fetchUserData:', error);
-      // Even on error, ensure we have a fallback profile
-      if (user && !profile) {
-        const fallbackProfile = {
-          id: user.id,
-          wallet_address: null,
-          base_balance: 1.0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setProfile(fallbackProfile);
-        console.log('Using error fallback profile:', fallbackProfile);
-      }
     } finally {
       setLoading(false);
     }
@@ -200,7 +171,7 @@ export const useSupabaseData = () => {
       if (data) {
         const validProfile = {
           ...data,
-          base_balance: data.base_balance ? Number(data.base_balance) : 1.0
+          base_balance: data.base_balance ? Number(data.base_balance) : 1500.0
         };
         setProfile(validProfile);
       }
@@ -238,6 +209,19 @@ export const useSupabaseData = () => {
         currentBalance: profile.base_balance
       });
 
+      // Check balance for buy orders
+      if (tradeType === 'buy' && totalBase > profile.base_balance) {
+        return { data: null, error: 'Insufficient USDC balance' };
+      }
+
+      // Check holdings for sell orders
+      if (tradeType === 'sell') {
+        const existingHolding = holdings.find(h => h.token_address === tokenAddress);
+        if (!existingHolding || amount > existingHolding.amount) {
+          return { data: null, error: 'Insufficient token balance' };
+        }
+      }
+
       // Insert trade record
       const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
@@ -259,47 +243,58 @@ export const useSupabaseData = () => {
         throw tradeError;
       }
 
-      console.log('Trade inserted successfully:', tradeData);
-
       // Update or insert holding
       const existingHolding = holdings.find(h => h.token_address === tokenAddress);
       
       if (tradeType === 'buy') {
-        const newAmount = (existingHolding?.amount || 0) + amount;
-        const newTotalInvested = (existingHolding?.total_invested || 0) + totalBase;
-        const newAverageBuyPrice = newAmount > 0 ? newTotalInvested / newAmount : 0;
+        if (existingHolding) {
+          const newAmount = existingHolding.amount + amount;
+          const newTotalInvested = existingHolding.total_invested + totalBase;
+          const newAverageBuyPrice = newAmount > 0 ? newTotalInvested / newAmount : 0;
 
-        const { error: holdingError } = await supabase
-          .from('user_holdings')
-          .upsert({
-            user_id: user.id,
-            token_address: tokenAddress,
-            token_symbol: tokenSymbol,
-            token_name: tokenName,
-            amount: newAmount,
-            average_buy_price: newAverageBuyPrice,
-            total_invested: newTotalInvested
-          }, { onConflict: 'user_id, token_address' });
+          const { error: holdingError } = await supabase
+            .from('user_holdings')
+            .update({
+              amount: newAmount,
+              average_buy_price: newAverageBuyPrice,
+              total_invested: newTotalInvested,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingHolding.id);
 
-        if (holdingError) {
-          console.error('Holding upsert error:', holdingError);
-          throw holdingError;
+          if (holdingError) throw holdingError;
+        } else {
+          const { error: holdingError } = await supabase
+            .from('user_holdings')
+            .insert({
+              user_id: user.id,
+              token_address: tokenAddress,
+              token_symbol: tokenSymbol,
+              token_name: tokenName,
+              amount,
+              average_buy_price: pricePerToken,
+              total_invested: totalBase
+            });
+
+          if (holdingError) throw holdingError;
         }
 
-        // Update profile balance
+        // Update profile balance (subtract for buy)
         const newBalance = profile.base_balance - totalBase;
-        console.log('Updating balance from', profile.base_balance, 'to', newBalance);
-        
         const { error: balanceError } = await updateProfile({ base_balance: newBalance });
-        if (balanceError) {
-          console.error('Balance update error:', balanceError);
-          throw balanceError;
-        }
+        if (balanceError) throw balanceError;
+
       } else {
+        // Sell order
         if (existingHolding) {
           const newAmount = existingHolding.amount - amount;
           const proportionSold = amount / existingHolding.amount;
-          const newTotalInvested = existingHolding.total_invested * (1 - proportionSold);
+          const investedInSold = existingHolding.total_invested * proportionSold;
+          const newTotalInvested = existingHolding.total_invested - investedInSold;
+
+          // Calculate profit/loss (totalBase - what was originally invested in this portion)
+          const profit = totalBase - investedInSold;
+          console.log(`Sell trade profit: ${profit.toFixed(4)} USDC (Sale: ${totalBase.toFixed(4)}, Original investment: ${investedInSold.toFixed(4)})`);
 
           if (newAmount <= 0.000001) {
             const { error: deleteError } = await supabase
@@ -307,34 +302,25 @@ export const useSupabaseData = () => {
               .delete()
               .eq('id', existingHolding.id);
             
-            if (deleteError) {
-              console.error('Holding delete error:', deleteError);
-              throw deleteError;
-            }
+            if (deleteError) throw deleteError;
           } else {
             const { error: updateError } = await supabase
               .from('user_holdings')
               .update({
                 amount: newAmount,
-                total_invested: newTotalInvested
+                total_invested: newTotalInvested,
+                average_buy_price: newAmount > 0 ? newTotalInvested / newAmount : 0,
+                updated_at: new Date().toISOString()
               })
               .eq('id', existingHolding.id);
             
-            if (updateError) {
-              console.error('Holding update error:', updateError);
-              throw updateError;
-            }
+            if (updateError) throw updateError;
           }
 
-          // Update profile balance
+          // Update profile balance (add sale proceeds including profit)
           const newBalance = profile.base_balance + totalBase;
-          console.log('Updating balance from', profile.base_balance, 'to', newBalance);
-          
           const { error: balanceError } = await updateProfile({ base_balance: newBalance });
-          if (balanceError) {
-            console.error('Balance update error:', balanceError);
-            throw balanceError;
-          }
+          if (balanceError) throw balanceError;
         }
       }
 

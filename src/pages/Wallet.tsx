@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -10,11 +11,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { WalletCard } from "@/components/ui/WalletCard";
-import { useLocalWallet } from '@/hooks/useLocalWallet';
-import { AiChat } from '@/components/AiChat'; // <-- import AiChat
+import { AiChat } from '@/components/AiChat';
 
 const Wallet = () => {
-  const { baseBalance, holdings, trades, reset } = useLocalWallet();
+  const { profile, holdings, trades, loading } = useSupabaseData();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   // Portfolio data
@@ -34,10 +36,30 @@ const Wallet = () => {
 
   // Attach wallet info for AI
   const walletInfo = {
-    balance: baseBalance,
+    balance: profile?.base_balance || 0,
     portfolio: portfolioData,
     tokenDetails: tokenDetails,
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 flex items-center justify-center">
+        <div className="text-white text-xl">Loading wallet...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
+          <p className="text-slate-300 mb-6">You need to connect your wallet to view your portfolio</p>
+          <ConnectButton />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-4">
@@ -47,7 +69,7 @@ const Wallet = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = '/app'}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2 text-white font-bold hover:bg-white/10 rounded-xl px-3"
           style={{ minWidth: 0 }}
         >
@@ -64,20 +86,20 @@ const Wallet = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = '/pnl'}
+          onClick={() => navigate('/pnl')}
           className="flex items-center gap-2 text-white hover:bg-white/10 rounded-xl px-2"
         >
           <TrendingUp className="w-4 h-4" />
           <span className="hidden md:inline-block">View PNL</span>
         </Button>
-        {/* Bounties link */}
+        {/* Tasks link */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = '/bounties'}
+          onClick={() => navigate('/bounties')}
           className="flex items-center gap-2 text-cyan-400 hover:bg-white/10 rounded-xl px-2"
         >
-          <span className="hidden md:inline-block">Bounties</span>
+          <span className="hidden md:inline-block">Tasks</span>
         </Button>
         {/* Spacer */}
         <div className="flex-1" />
@@ -86,7 +108,7 @@ const Wallet = () => {
         <div className="flex-shrink-0">
           <div className="rounded-xl px-4 py-2 bg-gradient-to-br from-slate-800/80 to-blue-900/70 flex flex-col items-center min-w-[110px] shadow border border-blue-600/30">
             <span className="text-cyan-400 text-xs font-medium leading-tight whitespace-nowrap">
-              Balance: {baseBalance.toFixed(2)}
+              Balance: {profile?.base_balance?.toFixed(2) || '0.00'}
             </span>
             <span className="text-white text-xs font-semibold" style={{ letterSpacing: 0.2 }}>USDC</span>
           </div>
@@ -95,7 +117,7 @@ const Wallet = () => {
         <div className="flex-shrink-0 ml-1">
           <div className="rounded-xl px-4 py-2 bg-gradient-to-br from-slate-800/80 to-blue-900/70 flex items-center gap-2 min-w-[120px] shadow border border-green-400/20">
             <span className="text-green-400 text-xs font-bold">USDC:</span>
-            <span className="text-green-300 text-xs font-extrabold">${baseBalance.toFixed(2)}</span>
+            <span className="text-green-300 text-xs font-extrabold">${profile?.base_balance?.toFixed(2) || '0.00'}</span>
           </div>
         </div>
       </nav>
@@ -110,14 +132,15 @@ const Wallet = () => {
               <span className="text-lg font-bold text-white drop-shadow">Portfolio</span>
             </div>
             <Portfolio 
-              balance={baseBalance} 
+              balance={profile?.base_balance || 0} 
               portfolio={portfolioData} 
               tokenDetails={tokenDetails}
               basePrice={1}
-              onTokenClick={(tokenAddress) => window.location.href = `/trade/${tokenAddress}`}
+              onTokenClick={(tokenAddress) => navigate(`/trade/${tokenAddress}`)}
               coinLabel="USDC"
             />
           </WalletCard>
+          
           {/* Trade History Card */}
           <WalletCard className="w-full flex flex-col gap-4 h-fit">
             <div className="flex items-center gap-2 mb-3">
@@ -125,26 +148,38 @@ const Wallet = () => {
               <span className="text-lg font-bold text-white drop-shadow">Trade History</span>
             </div>
             <div className="text-slate-400 mt-5 mb-10 text-center">
-              {trades.length === 0 ?
-                <>No trades yet. You start with 1500 USDC in BASE—go trade!</>
-                :
-                <ul>
-                  {trades.map((t) => (
-                    <li key={t.id} className="text-xs text-white/80">
-                      [{t.created_at.slice(0,19).replace('T', ' ')}] {t.trade_type.toUpperCase()} {t.amount.toFixed(4)} {t.token_symbol} @ {(t.price_per_token).toFixed(6)} for {(t.total_base).toFixed(4)} BASE
-                    </li>
+              {trades.length === 0 ? (
+                <>No trades yet. You start with 1500 USDC—go trade!</>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {trades.slice(0, 10).map((trade) => (
+                    <div key={trade.id} className="text-xs text-white/80 p-2 bg-slate-800/30 rounded border border-slate-700/30">
+                      <div className="flex justify-between items-center">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          trade.trade_type === 'buy' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {trade.trade_type.toUpperCase()}
+                        </span>
+                        <span className="text-slate-300">
+                          {trade.amount.toFixed(4)} {trade.token_symbol}
+                        </span>
+                      </div>
+                      <div className="text-slate-400 text-xs mt-1">
+                        @ {trade.price_per_token.toFixed(6)} for {trade.total_base.toFixed(4)} USDC
+                      </div>
+                      <div className="text-slate-500 text-xs">
+                        {new Date(trade.created_at).toLocaleString()}
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              }
+                </div>
+              )}
             </div>
-            <button
-              className="mt-2 w-full text-xs text-cyan-400 bg-slate-900/40 rounded px-2 py-1 border border-cyan-400/20 hover:bg-cyan-400/10"
-              onClick={reset}
-            >
-              Reset Wallet (Demo)
-            </button>
           </WalletCard>
         </div>
+        
         {/* AI Chat (wallet-aware) */}
         <div className="mt-8">
           <AiChat walletInfo={walletInfo} />
