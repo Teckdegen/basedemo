@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,12 +21,19 @@ interface Message {
   content: string;
 }
 
+interface WalletInfo {
+  balance: number;
+  portfolio: Record<string, number>;
+  tokenDetails: Record<string, TokenData>;
+}
+
 interface AiChatProps {
   selectedToken?: TokenData | null;
   inDialog?: boolean;
+  walletInfo?: WalletInfo | null;
 }
 
-export const AiChat = ({ selectedToken, inDialog }: AiChatProps) => {
+export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const savedMessages = localStorage.getItem('ai-chat-history');
@@ -35,7 +43,9 @@ export const AiChat = ({ selectedToken, inDialog }: AiChatProps) => {
     } catch (error) {
       console.error('Failed to parse chat history from localStorage', error);
     }
-    return [{ role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }];
+    return [
+      { role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }
+    ];
   });
   
   const [input, setInput] = useState('');
@@ -62,22 +72,56 @@ export const AiChat = ({ selectedToken, inDialog }: AiChatProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Check if a string looks like a 0x... contract address
+  const extractCA = (text: string) => {
+    const match = text.match(/\b0x[a-fA-F0-9]{40,}\b/);
+    return match ? match[0] : null;
+  };
+
+  // Compose system message about wallet context
+  const getWalletSystemPrompt = () => {
+    if (!walletInfo) return "";
+    const { balance, portfolio, tokenDetails } = walletInfo;
+    let holdings = Object.entries(portfolio)
+      .filter(([token, amount]) => amount > 0)
+      .map(([token, amount]) => {
+        const sym = tokenDetails[token]?.symbol || "";
+        return `${amount} ${sym}`.trim();
+      });
+    return (
+      "SYSTEM: The user is chatting from a trading demo wallet interface. " +
+      `The wallet currently has a balance of ${balance.toFixed(4)} USDC and token holdings: ${holdings.join(", ") || "none"}. ` +
+      "You can answer questions using this up-to-date balance/portfolio info. " +
+      "If the user sends an EVM contract address, try to analyze that token and reply helpfully."
+    );
+  };
+
   const sendMessage = async (messageContent: string) => {
     if (!messageContent.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: messageContent };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    
     scrollToBottom();
+
+    // Compose enhanced prompt with system wallet context if available
+    let systemPrompt = getWalletSystemPrompt();
+    let ca = extractCA(messageContent);
+    let prompt;
+    if (systemPrompt) {
+      prompt = systemPrompt + "\n" +
+        (ca ? `USER SENT CONTRACT ADDRESS: ${ca}\n` : "") +
+        messageContent;
+    } else {
+      prompt = messageContent;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
-        body: { prompt: messageContent },
+        body: { prompt },
       });
 
       if (error) throw error;
-      
       if (data.error) throw new Error(data.error);
 
       const aiMessage: Message = { role: 'model', content: data.response };
@@ -116,6 +160,11 @@ export const AiChat = ({ selectedToken, inDialog }: AiChatProps) => {
             AI Trading Assistant
           </h2>
           <p className="text-sm text-slate-400">Powered by Gemini</p>
+          {walletInfo && (
+            <p className="text-xs text-green-400 mt-1">
+              Wallet: {walletInfo.balance.toFixed(2)} USDC &bull; Holdings: {Object.entries(walletInfo.portfolio).filter(([_,v])=>v>0).length}
+            </p>
+          )}
         </div>
         <div className="flex items-center space-x-2">
             {messages.length > 1 && (

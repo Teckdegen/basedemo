@@ -11,9 +11,9 @@ import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { WalletCard } from "@/components/ui/WalletCard";
 import { useLocalWallet } from '@/hooks/useLocalWallet';
+import { AiChat } from '@/components/AiChat'; // <-- import AiChat
 
 const Wallet = () => {
-  // Use local wallet logic
   const { baseBalance, holdings, trades, reset } = useLocalWallet();
   const isMobile = useIsMobile();
 
@@ -32,9 +32,12 @@ const Wallet = () => {
     };
   });
 
-  // ... keep nav and header code ...
-  // Just use baseBalance for summary:
-  // Balance: {baseBalance.toFixed(2)} USDC
+  // Attach wallet info for AI
+  const walletInfo = {
+    balance: baseBalance,
+    portfolio: portfolioData,
+    tokenDetails: tokenDetails,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-4">
@@ -110,7 +113,7 @@ const Wallet = () => {
               balance={baseBalance} 
               portfolio={portfolioData} 
               tokenDetails={tokenDetails}
-              basePrice={1} // 1 USDC = $1 always
+              basePrice={1}
               onTokenClick={(tokenAddress) => window.location.href = `/trade/${tokenAddress}`}
               coinLabel="USDC"
             />
@@ -134,7 +137,6 @@ const Wallet = () => {
                 </ul>
               }
             </div>
-            {/* Optional: a button to reset the wallet */}
             <button
               className="mt-2 w-full text-xs text-cyan-400 bg-slate-900/40 rounded px-2 py-1 border border-cyan-400/20 hover:bg-cyan-400/10"
               onClick={reset}
@@ -142,6 +144,10 @@ const Wallet = () => {
               Reset Wallet (Demo)
             </button>
           </WalletCard>
+        </div>
+        {/* AI Chat (wallet-aware) */}
+        <div className="mt-8">
+          <AiChat walletInfo={walletInfo} />
         </div>
       </main>
     </div>
