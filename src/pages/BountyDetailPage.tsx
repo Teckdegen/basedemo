@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { BountyWinnerAnalysis } from "@/components/BountyWinnerAnalysis";
+import { useAuth } from "@/hooks/useAuth";
 
 type Bounty = {
   id: string;
@@ -16,6 +18,7 @@ type Bounty = {
   mystery_prize?: string | null;
   created_at: string;
 };
+
 type Entry = {
   id: string;
   wallet_address: string;
@@ -23,12 +26,17 @@ type Entry = {
   created_at: string;
 };
 
+const ADMIN_WALLET = "0xC87646B4B86f92b7d39b6c128CA402f9662B7988";
+
 export default function BountyDetailPage() {
   const { bountyId } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [bounty, setBounty] = useState<Bounty | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
 
   useEffect(() => {
     async function fetchBounty() {
@@ -67,38 +75,66 @@ export default function BountyDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 px-4 py-8">
-      <div className="max-w-2xl mx-auto bg-slate-800/80 rounded-xl border border-cyan-400/10 p-6 shadow-xl">
-        <Button variant="ghost" onClick={() => navigate("/bounties")} className="mb-4">&larr; Back</Button>
-        <h1 className="text-3xl font-bold text-cyan-200 mb-2">{bounty.title}</h1>
-        <div className="text-white/90 mb-4">{bounty.description}</div>
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">{bounty.entry_price} BASE Entry</span>
-          {bounty.winner_wallet && (
-            <span className="text-green-300 border border-green-400 px-3 py-1 rounded-full bg-black/20">
-              Winner: {bounty.winner_wallet}
+      <div className="max-w-4xl mx-auto">
+        <Button variant="ghost" onClick={() => navigate("/bounties")} className="mb-4 text-white">&larr; Back</Button>
+        
+        <div className="bg-slate-800/80 rounded-xl border border-cyan-400/10 p-6 shadow-xl mb-6">
+          <h1 className="text-3xl font-bold text-cyan-200 mb-2">{bounty.title}</h1>
+          <div className="text-white/90 mb-4">{bounty.description}</div>
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">
+              {bounty.entry_price} BASE Entry
             </span>
-          )}
-        </div>
-        <div className="mb-4">
-          <span className="text-cyan-300 text-sm">Created: {new Date(bounty.created_at).toLocaleString()}</span>
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-cyan-400 mb-1">Entries ({entries.length})</h2>
-          <div className="flex flex-wrap gap-2">
-            {entries.length === 0 && <span className="text-xs text-slate-300">No entries yet.</span>}
-            {entries.map(entry => (
-              <span
-                key={entry.id}
-                className={`text-[11px] px-3 py-[3px] border rounded ${entry.paid ? "border-green-400 bg-green-950 text-green-300" : "border-cyan-400 bg-cyan-950 text-cyan-300"}`}
-                title={entry.wallet_address}
-              >
-                {entry.wallet_address.substring(0, 8)}... {entry.paid ? "✅" : ""}
+            {bounty.winner_wallet && (
+              <span className="text-green-300 border border-green-400 px-3 py-1 rounded-full bg-black/20">
+                Winner: {bounty.winner_wallet.substring(0, 8)}...
               </span>
-            ))}
+            )}
+          </div>
+          <div className="mb-4">
+            <span className="text-cyan-300 text-sm">Created: {new Date(bounty.created_at).toLocaleString()}</span>
+          </div>
+          
+          {/* Basic Entry List */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-cyan-400 mb-2">Entries ({entries.length})</h2>
+            <div className="flex flex-wrap gap-2">
+              {entries.length === 0 && <span className="text-xs text-slate-300">No entries yet.</span>}
+              {entries.map(entry => (
+                <span
+                  key={entry.id}
+                  className={`text-[11px] px-3 py-[3px] border rounded ${
+                    entry.paid ? "border-green-400 bg-green-950 text-green-300" : "border-cyan-400 bg-cyan-950 text-cyan-300"
+                  }`}
+                  title={entry.wallet_address}
+                >
+                  {entry.wallet_address.substring(0, 8)}... {entry.paid ? "✅" : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Instructions */}
+          <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600/30">
+            <h3 className="text-cyan-300 font-semibold mb-2">How to Enter:</h3>
+            <p className="text-white/80 text-sm mb-2">
+              1. Join the bounty by clicking "Join Bounty" on the bounties page
+            </p>
+            <p className="text-white/80 text-sm mb-2">
+              2. Send {bounty.entry_price} BASE to the admin wallet:
+            </p>
+            <div className="bg-slate-900 p-2 rounded border font-mono text-xs text-green-300 break-all">
+              {ADMIN_WALLET}
+            </div>
+            <p className="text-white/80 text-sm mt-2">
+              3. Once payment is confirmed, you'll be eligible for the bounty
+            </p>
           </div>
         </div>
+
+        {/* Winner Analysis Component */}
+        <BountyWinnerAnalysis bountyId={bounty.id} isAdmin={isAdmin} />
       </div>
     </div>
   );
 }
-
