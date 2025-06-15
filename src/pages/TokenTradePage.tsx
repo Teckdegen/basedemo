@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import TokenChart from '@/components/TokenChart';
 import TradeSummary from '@/components/TradeSummary';
 import { useLocalWallet } from "@/hooks/useLocalWallet";
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileNav from '@/components/MobileNav';
 
 interface TokenData {
   address: string;
@@ -49,6 +51,7 @@ const TokenTradePage = () => {
   } = useLocalWallet();
   const { priceData: basePrice, forceRefresh: refreshBasePrice } = useBasePrice();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [baseAmount, setBaseAmount] = useState('');
@@ -279,6 +282,9 @@ const TokenTradePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
+              {/* Mobile hamburger menu */}
+              {isMobile && <MobileNav />}
+              
               <Button
                 variant="ghost"
                 size="sm"
