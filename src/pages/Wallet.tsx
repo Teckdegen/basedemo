@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -13,57 +12,49 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { WalletCard } from "@/components/ui/WalletCard";
 
 // === STATIC WALLET LOGIC ===
-const STATIC_BALANCE = 1500;
-const STATIC_USD = 1500;
+const STATIC_BALANCE = 1500; // Always 1500 "USDC in base"
+const STATIC_USD = 1500;     // 1 USDC = $1
+
+const STATIC_HOLDINGS = [
+  {
+    token_address: "base-usdc",
+    token_name: "Base USDC",
+    token_symbol: "USDC",
+    amount: 1500,
+  },
+];
+
+const STATIC_TRADES = []; // Could add fake static trades if needed later
 
 const Wallet = () => {
+  // Remove all API/data hooks, only use static values
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
   const { holdings, trades, profile, loading: dataLoading } = useSupabaseData();
   const isMobile = useIsMobile();
 
-  // Convert holdings to legacy format for Portfolio component
-  const portfolioData = holdings.reduce((acc, holding) => {
-    acc[holding.token_address] = holding.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  // Just render everything using the static values
+  // Prepare data for Portfolio and TradeHistory
+  // const holdings = STATIC_HOLDINGS; // Only 1500 USDC in base
+  // const trades = STATIC_TRADES;
 
-  // Convert holdings to token details format
-  const tokenDetails = holdings.reduce((acc, holding) => {
-    acc[holding.token_address] = {
-      address: holding.token_address,
-      name: holding.token_name,
-      symbol: holding.token_symbol,
-      price: 1, // 1 USDC == 1 USD by definition now
-      priceChange24h: 0
-    };
-    return acc;
-  }, {} as Record<string, any>);
+  const portfolioData = {
+    "base-usdc": 1500,
+  };
+  const tokenDetails = {
+    "base-usdc": {
+      address: "base-usdc",
+      name: "Base USDC",
+      symbol: "USDC",
+      price: 1, // Always $1
+      priceChange24h: 0,
+    },
+  };
+  const legacyTrades = []; // No trades by default for new users
 
-  // Convert trades to legacy format
-  const legacyTrades = trades.map(trade => ({
-    id: trade.id,
-    tokenAddress: trade.token_address,
-    tokenSymbol: trade.token_symbol,
-    type: trade.trade_type as 'buy' | 'sell',
-    amount: trade.amount,
-    price: trade.price_per_token,
-    total: trade.total_base,
-    timestamp: new Date(trade.created_at).getTime()
-  }));
-
-  const loading = authLoading || dataLoading;
-
-  if (!isConnected || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  const mainContentAnim = isMobile ? "animate-slide-in-right" : "animate-fade-in";
+  // We'll just not check for auth/loading/isConnected for now (SPA demo logic)
+  // You may want to add some form of stub/warning if a user wants to see the wallet without connecting
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-4">
@@ -73,14 +64,14 @@ const Wallet = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/app')}
+          onClick={() => window.location.href = '/app'}
           className="flex items-center gap-2 text-white font-bold hover:bg-white/10 rounded-xl px-3"
           style={{ minWidth: 0 }}
         >
           <ArrowLeft className="w-4 h-4 flex-shrink-0" />
           <span className="hidden md:inline-block whitespace-nowrap">Back to Trading</span>
         </Button>
-        {/* Avatar image, using uploaded */}
+        {/* Avatar image */}
         <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden border-2 border-cyan-400/70 shadow-lg bg-gradient-to-tr from-cyan-600 to-blue-900 mr-1">
           <img src="/photo-1721322800607-8c38375eef04" alt="Profile" className="object-cover h-full w-full" />
         </div>
@@ -90,7 +81,7 @@ const Wallet = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/pnl')}
+          onClick={() => window.location.href = '/pnl'}
           className="flex items-center gap-2 text-white hover:bg-white/10 rounded-xl px-2"
         >
           <TrendingUp className="w-4 h-4" />
@@ -100,7 +91,7 @@ const Wallet = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/bounties')}
+          onClick={() => window.location.href = '/bounties'}
           className="flex items-center gap-2 text-cyan-400 hover:bg-white/10 rounded-xl px-2"
         >
           <span className="hidden md:inline-block">Bounties</span>
@@ -125,24 +116,13 @@ const Wallet = () => {
           </div>
         </div>
         {/* Sign Out */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={async() => { await signOut(); navigate('/'); }}
-          className="text-white hover:bg-white/10 rounded-xl px-2"
-          aria-label="Sign out"
-        >
-          <LogOut className="w-4 h-4" />
-        </Button>
+        {/* (Optional: add a button if you want to support nav out) */}
         {/* Wallet Connect */}
-        <div className="flex-shrink-0 ml-1">
-          <ConnectButton />
-        </div>
+        {/* (Optional: could skip wallet connect & auth for fully static version) */}
       </nav>
 
-      {/* Main Wallet Content - Cards Layout with Anim, Responsive */}
-      <main className={`${mainContentAnim} max-w-7xl mx-auto p-3 md:p-8`}>
-        {/* Stacked on mobile, grid on large */}
+      {/* Main Wallet Content */}
+      <main className={`max-w-7xl mx-auto p-3 md:p-8`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-7">
           {/* Portfolio Card */}
           <WalletCard className="w-full flex flex-col gap-4 h-fit">
@@ -154,8 +134,8 @@ const Wallet = () => {
               balance={STATIC_BALANCE} 
               portfolio={portfolioData} 
               tokenDetails={tokenDetails}
-              basePrice={1} // 1 USDC = $1
-              onTokenClick={(tokenAddress) => navigate(`/trade/${tokenAddress}`)}
+              basePrice={1} // 1 USDC = $1 always
+              onTokenClick={(tokenAddress) => window.location.href = `/trade/${tokenAddress}`}
               coinLabel="USDC"
             />
           </WalletCard>
@@ -165,7 +145,10 @@ const Wallet = () => {
               <ArrowLeft className="w-5 h-5 text-blue-200 transform rotate-45" />
               <span className="text-lg font-bold text-white drop-shadow">Trade History</span>
             </div>
-            <TradeHistory trades={legacyTrades} />
+            {/* Empty trade history for static demo */}
+            <div className="text-slate-400 mt-5 mb-10 text-center">
+              No trades yet. You start with 1500 USDC in BASE—go trade!
+            </div>
           </WalletCard>
         </div>
       </main>
