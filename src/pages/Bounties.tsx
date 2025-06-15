@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +32,7 @@ type BountyEntry = {
 };
 
 const ADMIN_WALLET = "0xC87646B4B86f92b7d39b6c128CA402f9662B7988";
+const BOUNTY_CREATION_FEE = 1; // 1 BASE to create a bounty
 
 function useBounties() {
   const [bounties, setBounties] = useState<Bounty[]>([]);
@@ -87,10 +89,12 @@ function useBountyEntries(bountyId: string) {
 const BountiesPage = () => {
   const { user, profile } = useAuth();
   const { address, isConnected } = useAccount();
+  const { sendTransaction } = useSendTransaction();
   const navigate = useNavigate();
 
   const { bounties, loading: bountiesLoading, fetchBounties } = useBounties();
   const [creating, setCreating] = useState(false);
+  const [payingCreationFee, setPayingCreationFee] = useState(false);
 
   const [form, setForm] = useState<{ title: string; description: string; entry_price: number }>({
     title: "",
@@ -100,11 +104,46 @@ const BountiesPage = () => {
 
   const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
 
-  const handleCreateBounty = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePayCreationFee = async () => {
+    if (!isConnected || !address) {
+      toast({ title: "Connect wallet", description: "Please connect your wallet to create a bounty." });
+      return;
+    }
+
+    setPayingCreationFee(true);
+    try {
+      await sendTransaction({
+        to: ADMIN_WALLET as `0x${string}`,
+        value: parseEther(BOUNTY_CREATION_FEE.toString()),
+      });
+      
+      toast({ 
+        title: "Payment sent!", 
+        description: "Creation fee paid! You can now create your bounty." 
+      });
+      
+      // After payment, create the bounty
+      await handleCreateBounty();
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({ 
+        title: "Payment failed", 
+        description: "There was an error sending your payment. Please try again." 
+      });
+    } finally {
+      setPayingCreationFee(false);
+    }
+  };
+
+  const handleCreateBounty = async () => {
+    if (!profile) {
+      toast({ title: "Sign in required", description: "Please sign in to create a bounty." });
+      return;
+    }
+
     setCreating(true);
     const { error } = await supabase.from("bounties").insert({
-      created_by: profile?.wallet_address,
+      created_by: profile.wallet_address,
       title: form.title,
       description: form.description,
       entry_price: Number(form.entry_price),
@@ -112,7 +151,7 @@ const BountiesPage = () => {
     if (error) {
       toast({ title: "Create failed", description: error.message });
     } else {
-      toast({ title: "Bounty created!" });
+      toast({ title: "Bounty created!", description: "Your bounty is live! It will start once 10+ people join." });
       setForm({ title: "", description: "", entry_price: 2 });
       fetchBounties();
     }
@@ -156,10 +195,9 @@ const BountiesPage = () => {
       return;
     }
 
-    // Show success and payment instruction
     toast({ 
       title: "Joined bounty!", 
-      description: `Now send ${bounty.entry_price} BASE to the admin wallet to complete your entry.` 
+      description: `Now send ${bounty.entry_price} BASE to complete your entry.` 
     });
   };
 
@@ -173,45 +211,50 @@ const BountiesPage = () => {
           <h1 className="text-3xl font-bold text-white">Bounties</h1>
         </div>
 
-        {isAdmin && (
-          <form className="bg-white/5 p-4 mb-8 rounded-2xl border border-cyan-700/20 shadow"
-            onSubmit={handleCreateBounty}>
-            <h2 className="text-xl font-bold text-cyan-300 mb-2">Create Bounty</h2>
-            <input
-              className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
-              required
-              placeholder="Title"
-              value={form.title}
-              onChange={e => setForm(s => ({ ...s, title: e.target.value }))}
-            />
-            <textarea
-              className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
-              placeholder="Description"
-              value={form.description}
-              onChange={e => setForm(s => ({ ...s, description: e.target.value }))}
-            />
-            <input
-              className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
-              required
-              type="number"
-              min={0.01}
-              step={0.01}
-              placeholder="Entry price (BASE)"
-              value={form.entry_price}
-              onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
-            />
-            <Button type="submit" disabled={creating}>
-              {creating ? "Creating..." : "Create Bounty"}
-            </Button>
-          </form>
-        )}
+        {/* Anyone can create bounties now */}
+        <form className="bg-white/5 p-4 mb-8 rounded-2xl border border-cyan-700/20 shadow"
+          onSubmit={(e) => e.preventDefault()}>
+          <h2 className="text-xl font-bold text-cyan-300 mb-2">Create Bounty</h2>
+          <p className="text-sm text-yellow-400 mb-3">💡 Pay {BOUNTY_CREATION_FEE} BASE to host • Starts when 10+ people join</p>
+          <input
+            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
+            required
+            placeholder="Title"
+            value={form.title}
+            onChange={e => setForm(s => ({ ...s, title: e.target.value }))}
+          />
+          <textarea
+            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-2"
+            placeholder="Description"
+            value={form.description}
+            onChange={e => setForm(s => ({ ...s, description: e.target.value }))}
+          />
+          <input
+            className="w-full bg-slate-900 text-white border border-cyan-400/20 rounded p-2 mb-4"
+            required
+            type="number"
+            min={0.01}
+            step={0.01}
+            placeholder="Entry price (BASE)"
+            value={form.entry_price}
+            onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
+          />
+          <Button 
+            type="button"
+            onClick={handlePayCreationFee}
+            disabled={creating || payingCreationFee || !form.title.trim()}
+            className="w-full bg-green-600 hover:bg-green-700"
+          >
+            {payingCreationFee ? "Sending Payment..." : creating ? "Creating..." : `Pay ${BOUNTY_CREATION_FEE} BASE & Create Bounty`}
+          </Button>
+        </form>
 
         {bountiesLoading ? (
           <div className="text-white">Loading bounties...</div>
         ) : (
           <div className="flex flex-col gap-6">
             {bounties.length === 0 && (
-              <div className="text-cyan-200 opacity-80">No active bounties yet.</div>
+              <div className="text-cyan-200 opacity-80">No bounties yet. Create the first one!</div>
             )}
             {bounties.map(bounty => (
               <BountyCard
@@ -248,6 +291,9 @@ function BountyCard({
   const { sendTransaction } = useSendTransaction();
   const alreadyJoined = !!entries.find(e => e.user_id === userId);
 
+  const canStart = entries.length >= 10;
+  const bountyStatus = canStart ? "Ready to Start!" : `${entries.length}/10 to start`;
+
   const handleSendPayment = async () => {
     if (!isConnected || !address) {
       toast({ title: "Connect wallet", description: "Please connect your wallet first." });
@@ -277,12 +323,17 @@ function BountyCard({
     <div className="bg-slate-800/80 rounded-xl border border-cyan-400/10 p-4 shadow-xl">
       <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={onDetail}>
         <span className="block text-xl font-semibold text-cyan-200">{bounty.title}</span>
-        <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">{bounty.entry_price} BASE</span>
+        <div className="flex items-center gap-2">
+          <span className="text-base text-cyan-300 font-bold border border-cyan-400/50 px-3 py-1 rounded-full bg-black/20">{bounty.entry_price} BASE</span>
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${canStart ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
+            {bountyStatus}
+          </span>
+        </div>
       </div>
       <div className="text-white/90 mb-2">{bounty.description}</div>
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs text-blue-400">
-          Created by: {bounty.created_by === adminWallet ? "Admin" : bounty.created_by}
+          Created by: {bounty.created_by === adminWallet ? "Admin" : `${bounty.created_by.substring(0, 8)}...`}
         </span>
         <span className="text-xs text-slate-500 ml-4">{new Date(bounty.created_at).toLocaleString()}</span>
       </div>
@@ -291,7 +342,7 @@ function BountyCard({
           <span className="text-xs text-slate-300">Loading entries...</span>
         ) : (
           <div>
-            <span className="text-xs text-cyan-300">Joined ({entries.length}):</span>
+            <span className="text-xs text-cyan-300">Participants ({entries.length}):</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {entries.map(entry => (
                 <span

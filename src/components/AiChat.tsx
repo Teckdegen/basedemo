@@ -44,7 +44,7 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
       console.error('Failed to parse chat history from localStorage', error);
     }
     return [
-      { role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }
+      { role: 'model', content: "Hello! I'm Base Demo AI, your intelligent trading assistant. I can see your current wallet balance and help analyze tokens. How can I assist you today?" }
     ];
   });
   
@@ -78,22 +78,28 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
     return match ? match[0] : null;
   };
 
-  // Compose system message about wallet context
+  // Enhanced system message with wallet context and AI identity
   const getWalletSystemPrompt = () => {
-    if (!walletInfo) return "";
-    const { balance, portfolio, tokenDetails } = walletInfo;
-    let holdings = Object.entries(portfolio)
-      .filter(([token, amount]) => amount > 0)
-      .map(([token, amount]) => {
-        const sym = tokenDetails[token]?.symbol || "";
-        return `${amount} ${sym}`.trim();
-      });
-    return (
-      "SYSTEM: The user is chatting from a trading demo wallet interface. " +
-      `The wallet currently has a balance of ${balance.toFixed(4)} USDC and token holdings: ${holdings.join(", ") || "none"}. ` +
-      "You can answer questions using this up-to-date balance/portfolio info. " +
-      "If the user sends an EVM contract address, try to analyze that token and reply helpfully."
-    );
+    let systemPrompt = "SYSTEM: You are 'Base Demo AI', an intelligent trading assistant specialized in cryptocurrency analysis. ";
+    
+    if (walletInfo) {
+      const { balance, portfolio, tokenDetails } = walletInfo;
+      let holdings = Object.entries(portfolio)
+        .filter(([token, amount]) => amount > 0)
+        .map(([token, amount]) => {
+          const sym = tokenDetails[token]?.symbol || "";
+          return `${amount} ${sym}`.trim();
+        });
+      
+      systemPrompt += `You are integrated with a demo trading wallet. The user's current wallet status: Balance: ${balance.toFixed(4)} USDC, Token holdings: ${holdings.join(", ") || "none"}. `;
+    }
+    
+    systemPrompt += "If asked about your name or identity, respond that you are 'Base Demo AI'. " +
+      "You can analyze contract addresses, provide trading insights, and answer questions about the user's portfolio. " +
+      "Always be helpful, concise, and focus on actionable trading advice. " +
+      "If the user sends an EVM contract address (0x...), analyze that token and provide helpful insights.";
+    
+    return systemPrompt;
   };
 
   const sendMessage = async (messageContent: string) => {
@@ -104,17 +110,12 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
     setIsLoading(true);
     scrollToBottom();
 
-    // Compose enhanced prompt with system wallet context if available
+    // Enhanced prompt with system context and contract address detection
     let systemPrompt = getWalletSystemPrompt();
     let ca = extractCA(messageContent);
-    let prompt;
-    if (systemPrompt) {
-      prompt = systemPrompt + "\n" +
-        (ca ? `USER SENT CONTRACT ADDRESS: ${ca}\n` : "") +
-        messageContent;
-    } else {
-      prompt = messageContent;
-    }
+    let prompt = systemPrompt + "\n" +
+      (ca ? `USER SENT CONTRACT ADDRESS: ${ca}\n` : "") +
+      `USER MESSAGE: ${messageContent}`;
 
     try {
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
@@ -148,7 +149,7 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
   };
 
   const handleClearHistory = () => {
-    setMessages([{ role: 'model', content: "Hello! I'm your AI trading assistant. How can I help you today?" }]);
+    setMessages([{ role: 'model', content: "Hello! I'm Base Demo AI, your intelligent trading assistant. I can see your current wallet balance and help analyze tokens. How can I assist you today?" }]);
   };
 
   return (
@@ -157,12 +158,12 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
         <div>
           <h2 className="text-lg font-semibold text-white flex items-center">
             <Bot className="w-5 h-5 mr-2 text-cyan-400" />
-            AI Trading Assistant
+            Base Demo AI
           </h2>
-          <p className="text-sm text-slate-400">Powered by Gemini</p>
+          <p className="text-sm text-slate-400">Your intelligent trading assistant</p>
           {walletInfo && (
             <p className="text-xs text-green-400 mt-1">
-              Wallet: {walletInfo.balance.toFixed(2)} USDC &bull; Holdings: {Object.entries(walletInfo.portfolio).filter(([_,v])=>v>0).length}
+              💰 Balance: {walletInfo.balance.toFixed(2)} USDC • 📊 Holdings: {Object.entries(walletInfo.portfolio).filter(([_,v])=>v>0).length} tokens
             </p>
           )}
         </div>
@@ -204,16 +205,16 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
         </div>
          {messages.length <= 1 && (
             <div className="p-4 pt-0">
-                <p className="text-sm text-slate-400 mb-3">Or try one of these suggestions:</p>
+                <p className="text-sm text-slate-400 mb-3">Try asking me:</p>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What are some trending tokens right now?")}>Trending tokens?</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What's my current balance?")}>My balance?</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What are some trending tokens?")}>Trending tokens?</Button>
                     {selectedToken && (
                         <>
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`Tell me about ${selectedToken.name} (${selectedToken.symbol})`)}>Analyze {selectedToken.symbol}</Button>
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`What's the market sentiment for ${selectedToken.name}?`)}>Sentiment for {selectedToken.symbol}?</Button>
+                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`Analyze ${selectedToken.symbol}`)}>Analyze {selectedToken.symbol}</Button>
                         </>
                     )}
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("How can I analyze my portfolio?")}>Analyze my portfolio</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Analyze my portfolio")}>Analyze portfolio</Button>
                 </div>
             </div>
         )}
@@ -223,7 +224,7 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about tokens, trends, or your portfolio..."
+            placeholder="Ask about your balance, send a contract address, or get trading insights..."
             className="bg-slate-800 border-slate-700 text-white placeholder-slate-500"
             disabled={isLoading}
           />
