@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { parseEther } from "viem";
-import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star, Calendar } from "lucide-react";
+import { ArrowLeft, Trophy, Users, DollarSign, Clock, Sparkles, Zap, Star, Calendar, Hourglass, UserCheck } from "lucide-react";
 
 // Visible to user as TASK, but database table used is "bounties"
 const ADMIN_WALLET = "0xC87646B4B86f92b7d39b6c128CA402f9662B7988";
@@ -20,11 +19,13 @@ type Task = {
   title: string;
   description: string | null;
   entry_price: number;
-  start_time?: string | null;
-  end_time: string;
+  start_time: string | null;
+  end_time: string | null;
   winner_wallet?: string | null;
   mystery_prize?: string | null;
   created_at: string;
+  duration_hours: number;
+  min_participants: number;
 };
 
 type TaskEntry = {
@@ -100,11 +101,12 @@ const TasksPage = () => {
   const [creating, setCreating] = useState(false);
   const [payingCreationFee, setPayingCreationFee] = useState(false);
 
-  const [form, setForm] = useState<{ title: string; description: string; entry_price: number; end_time: string }>({
+  const [form, setForm] = useState<{ title: string; description: string; entry_price: number; duration_hours: number; min_participants: number; }>({
     title: "",
     description: "",
     entry_price: 2,
-    end_time: "",
+    duration_hours: 24,
+    min_participants: 10,
   });
 
   const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
@@ -115,8 +117,13 @@ const TasksPage = () => {
       return;
     }
 
-    if (!form.end_time) {
-      toast({ title: "End time required", description: "Please set when your task will end." });
+    if (!form.duration_hours || form.duration_hours <= 0) {
+      toast({ title: "Duration required", description: "Please set a valid duration for your task." });
+      return;
+    }
+    
+    if (!form.min_participants || form.min_participants < 2) {
+      toast({ title: "Participants required", description: "A task needs at least 2 participants." });
       return;
     }
 
@@ -144,9 +151,9 @@ const TasksPage = () => {
       toast({ title: "Sign in required", description: "Please sign in to create a task." });
       return;
     }
-
-    if (!form.end_time) {
-      toast({ title: "End time required", description: "Please set when your task will end." });
+    
+    if (!form.duration_hours || form.duration_hours <= 0 || !form.min_participants || form.min_participants < 2) {
+      toast({ title: "Invalid settings", description: "Please provide a valid duration and minimum participants." });
       return;
     }
 
@@ -157,13 +164,14 @@ const TasksPage = () => {
       title: form.title,
       description: form.description,
       entry_price: Number(form.entry_price),
-      end_time: form.end_time,
+      duration_hours: Number(form.duration_hours),
+      min_participants: Number(form.min_participants),
     });
     if (error) {
       toast({ title: "Create failed", description: error.message });
     } else {
-      toast({ title: "Task created!", description: "Your task is live! It will start once 10+ people join." });
-      setForm({ title: "", description: "", entry_price: 2, end_time: "" });
+      toast({ title: "Task created!", description: "Your task is live! It will start once enough people join." });
+      setForm({ title: "", description: "", entry_price: 2, duration_hours: 24, min_participants: 10 });
       fetchTasks();
     }
     setCreating(false);
@@ -211,11 +219,11 @@ const TasksPage = () => {
     });
   };
 
-  // Get minimum datetime for datetime-local input (current time)
-  const getMinDateTime = () => {
-    const now = new Date();
-    return now.toISOString().slice(0, 16);
-  };
+  // Get minimum datetime for datetime-local input (current time) - NOT USED ANYMORE
+  // const getMinDateTime = () => {
+  //   const now = new Date();
+  //   return now.toISOString().slice(0, 16);
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-8">
@@ -254,7 +262,7 @@ const TasksPage = () => {
             <div className="flex items-center gap-2 text-yellow-400 bg-yellow-400/10 p-3 rounded-lg border border-yellow-400/20">
               <Zap className="w-5 h-5" />
               <span className="text-sm font-medium">
-                Pay $1 USDC to host • Starts when 10+ people join
+                Pay $1 USDC to host • Starts when minimum participants join
               </span>
             </div>
           </CardHeader>
@@ -288,45 +296,66 @@ const TasksPage = () => {
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  Entry Price (USDC)
-                </label>
-                <input
-                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
-                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
-                  required
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  placeholder="2.0"
-                  value={form.entry_price}
-                  onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Entry Price (USDC)
+                  </label>
+                  <input
+                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                             focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                    required
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    placeholder="2.0"
+                    value={form.entry_price}
+                    onChange={e => setForm(s => ({ ...s, entry_price: Number(e.target.value) }))}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Task End Time *
-                </label>
-                <input
-                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
-                           focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
-                  required
-                  type="datetime-local"
-                  min={getMinDateTime()}
-                  value={form.end_time}
-                  onChange={e => setForm(s => ({ ...s, end_time: e.target.value }))}
-                />
-                <p className="text-xs text-slate-400">Set when your task competition will end</p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                    <Hourglass className="w-4 h-4" />
+                    Duration (hours) *
+                  </label>
+                  <input
+                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                             focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                    required
+                    type="number"
+                    min={1}
+                    step={1}
+                    placeholder="24"
+                    value={form.duration_hours}
+                    onChange={e => setForm(s => ({ ...s, duration_hours: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-cyan-300 flex items-center gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Min. Participants *
+                  </label>
+                  <input
+                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                             focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
+                    required
+                    type="number"
+                    min={2}
+                    step={1}
+                    placeholder="10"
+                    value={form.min_participants}
+                    onChange={e => setForm(s => ({ ...s, min_participants: Number(e.target.value) }))}
+                  />
+                </div>
               </div>
               
               <Button 
                 type="button"
                 onClick={handlePayCreationFee}
-                disabled={creating || payingCreationFee || !form.title.trim() || !form.end_time}
+                disabled={creating || payingCreationFee || !form.title.trim() || !form.duration_hours || !form.min_participants}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 
                          text-white font-semibold py-6 rounded-lg shadow-lg transition-all duration-200 
                          disabled:opacity-50 disabled:cursor-not-allowed"
@@ -418,14 +447,26 @@ function TaskCard({
   const { sendTransaction } = useSendTransaction();
   const alreadyJoined = !!entries.find(e => e.user_id === userId);
 
-  const canStart = entries.length >= 10;
-  const taskStatus = canStart ? "Ready to Start!" : `${entries.length}/10 to start`;
-
-  // Format end time
-  const endTime = new Date(task.end_time);
+  const hasStarted = !!task.start_time;
+  const endTime = task.end_time ? new Date(task.end_time) : null;
   const now = new Date();
-  const isExpired = endTime < now;
-  const timeRemaining = isExpired ? "Expired" : endTime.toLocaleString();
+  const isExpired = endTime ? endTime < now : false;
+
+  const canStart = !hasStarted && entries.length >= task.min_participants;
+  const taskStatus = isExpired
+    ? "Ended"
+    : hasStarted
+    ? "In Progress"
+    : `${entries.length}/${task.min_participants} to start`;
+
+  let timeDisplay: string;
+  if (isExpired) {
+    timeDisplay = "Task Ended";
+  } else if (hasStarted && endTime) {
+    timeDisplay = `Ends: ${endTime.toLocaleString()}`;
+  } else {
+    timeDisplay = `Duration: ${task.duration_hours} hours`;
+  }
 
   const handleSendPayment = async () => {
     if (!isConnected || !address) {
@@ -457,8 +498,12 @@ function TaskCard({
               <span className="text-white font-bold">{task.entry_price} USDC</span>
             </div>
             <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
-              canStart 
-                ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+              isExpired
+                ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                : hasStarted
+                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                : canStart
+                ? 'bg-green-500/20 text-green-400 border-green-500/30'
                 : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
             }`}>
               {taskStatus}
@@ -479,7 +524,7 @@ function TaskCard({
           </div>
           <div className={`flex items-center gap-2 ${isExpired ? 'text-red-400' : 'text-orange-400'}`}>
             <Calendar className="w-4 h-4" />
-            <span>Ends: {timeRemaining}</span>
+            <span>{timeDisplay}</span>
           </div>
         </div>
 
