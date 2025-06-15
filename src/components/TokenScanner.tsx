@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,7 @@ interface TokenScannerProps {
 }
 
 const TokenScanner: React.FC<TokenScannerProps> = ({ onTokenSelect }) => {
+  const navigate = useNavigate();
   const [tokenAddress, setTokenAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [scannedToken, setScannedToken] = useState<TokenData | null>(null);
@@ -155,10 +158,17 @@ Provide a brief 100-word analysis covering potential risks, opportunities, and o
 
   const handleSelectForTrading = () => {
     if (scannedToken) {
-      onTokenSelect(scannedToken);
+      // Save token data to localStorage for the trading page
+      const savedTokens = JSON.parse(localStorage.getItem('scannedTokens') || '{}');
+      savedTokens[scannedToken.address] = scannedToken;
+      localStorage.setItem('scannedTokens', JSON.stringify(savedTokens));
+      
+      // Navigate to the dedicated trading page
+      navigate(`/trade/${scannedToken.address}`);
+      
       toast({
-        title: "Token Added",
-        description: `${scannedToken.symbol} added to trading interface`
+        title: "Redirecting to Trading",
+        description: `Opening trading interface for ${scannedToken.symbol}`
       });
     }
   };

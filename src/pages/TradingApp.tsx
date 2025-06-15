@@ -7,7 +7,7 @@ import TokenScanner from '@/components/TokenScanner';
 import TrendingTokens from '@/components/TrendingTokens';
 import { AiChat } from '@/components/AiChat';
 import { Button } from '@/components/ui/button';
-import { Wallet, User, TrendingUp } from 'lucide-react';
+import { Wallet, User, TrendingUp, MessageCircle, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import UsernameOnboard from '@/components/UsernameOnboard';
@@ -116,15 +116,15 @@ const TradingApp = () => {
           </div>
           
           {/* Right Column - AI Chat */}
-          {/* On desktop, show chat in panel; on mobile, show a button that opens dialog */}
           <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
             {isMobile ? (
               <>
                 <Dialog open={aiChatOpen} onOpenChange={setAiChatOpen}>
                   <DialogTrigger asChild>
                     <button
-                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg font-semibold mb-4"
+                      className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg font-semibold mb-4 flex items-center justify-center gap-2 transition-all shadow-lg"
                     >
+                      <Bot className="w-5 h-5" />
                       Open AI Chat
                     </button>
                   </DialogTrigger>

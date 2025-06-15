@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, User, Send, Loader2, RefreshCcw, X } from 'lucide-react';
+import { Bot, User, Send, Loader2, RefreshCcw, X, MessageCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DrawerClose } from "@/components/ui/drawer";
 
@@ -157,7 +157,9 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
       <div className="p-4 border-b border-slate-700 flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold text-white flex items-center">
-            <Bot className="w-5 h-5 mr-2 text-cyan-400" />
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mr-3">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
             Base Demo AI
           </h2>
           <p className="text-sm text-slate-400">Your intelligent trading assistant</p>
@@ -187,16 +189,26 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
         <div className="p-4 space-y-4">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-              {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center"><Bot className="w-5 h-5 text-cyan-400" /></div>}
+              {msg.role === 'model' && (
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+              )}
               <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300'}`}>
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               </div>
-              {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center"><User className="w-5 h-5 text-slate-300" /></div>}
+              {msg.role === 'user' && (
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              )}
             </div>
           ))}
           {isLoading && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center"><Bot className="w-5 h-5 text-cyan-400" /></div>
+              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
               <div className="max-w-xs md:max-w-md p-3 rounded-lg bg-slate-800 text-slate-300">
                 <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
               </div>
