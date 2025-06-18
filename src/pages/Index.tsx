@@ -19,6 +19,7 @@ const Index = () => {
   }, [isConnected, user, navigate]);
 
   const handleStartTrading = () => {
+    console.log('Start Trading clicked, navigating to wallet');
     navigate('/wallet');
   };
 
