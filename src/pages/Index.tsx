@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
@@ -14,7 +13,7 @@ const Index = () => {
 
   React.useEffect(() => {
     if (isConnected && user) {
-      navigate('/trade');
+      navigate('/wallet');
     }
   }, [isConnected, user, navigate]);
 
@@ -74,7 +73,7 @@ const Index = () => {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => navigate('/trade')}
+                        onClick={() => navigate('/wallet')}
                         size="lg"
                         className="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white px-8 py-4 text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                       >
