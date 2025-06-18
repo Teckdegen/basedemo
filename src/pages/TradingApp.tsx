@@ -29,6 +29,13 @@ const TradingApp = () => {
   const [selectedToken, setSelectedToken] = useState(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
+  // Redirect to landing page if not connected or authenticated
+  useEffect(() => {
+    if (!authLoading && (!isConnected || !user)) {
+      navigate('/');
+    }
+  }, [isConnected, user, authLoading, navigate]);
+
   useEffect(() => {
     if (user && profile && !profile.username && !authLoading) {
       setShowUsernameOnboard(true);
@@ -49,6 +56,11 @@ const TradingApp = () => {
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
+  }
+
+  // If not authenticated, the useEffect above will redirect to landing page
+  if (!isConnected || !user) {
+    return null;
   }
 
   if (showUsernameOnboard) {
