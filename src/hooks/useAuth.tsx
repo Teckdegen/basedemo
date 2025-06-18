@@ -32,9 +32,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { address, isConnected } = useAccount();
 
   useEffect(() => {
+    console.log('AuthProvider: Setting up auth state listener');
+    
     // Auth by wallet connect triggers Supabase session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Existing session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -62,6 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (user && address) {
+      console.log('Updating wallet address for user:', user.id);
       // Upsert wallet address if not present
       setTimeout(() => {
         supabase
@@ -73,13 +78,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user, address]);
 
   const refreshProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user to refresh profile for');
+      return;
+    }
+    console.log('Refreshing profile for user:', user.id);
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching profile:', error);
+    } else {
+      console.log('Profile refreshed:', data);
+    }
     setProfile(data);
     setLoading(false);
   };
@@ -103,6 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    console.log('Signing out user');
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

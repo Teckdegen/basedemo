@@ -15,7 +15,7 @@ import { AiChat } from '@/components/AiChat';
 
 const Wallet = () => {
   const { profile, holdings, trades, loading } = useSupabaseData();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -41,7 +41,8 @@ const Wallet = () => {
     tokenDetails: tokenDetails,
   };
 
-  if (loading) {
+  // Show loading while checking authentication
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 flex items-center justify-center">
         <div className="text-white text-xl">Loading wallet...</div>
@@ -49,13 +50,19 @@ const Wallet = () => {
     );
   }
 
+  // Show authentication required if no user is logged in
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
-          <p className="text-slate-300 mb-6">You need to connect your wallet to view your portfolio</p>
-          <ConnectButton />
+          <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
+          <p className="text-slate-300 mb-6">You need to be logged in to view your wallet and portfolio</p>
+          <Button
+            onClick={() => navigate('/')}
+            className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-xl"
+          >
+            Go to Home Page
+          </Button>
         </div>
       </div>
     );
