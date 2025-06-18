@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
@@ -16,6 +17,10 @@ const Index = () => {
       navigate('/wallet');
     }
   }, [isConnected, user, navigate]);
+
+  const handleStartTrading = () => {
+    navigate('/wallet');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950">
@@ -73,7 +78,7 @@ const Index = () => {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => navigate('/wallet')}
+                        onClick={handleStartTrading}
                         size="lg"
                         className="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white px-8 py-4 text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
                       >
