@@ -12,26 +12,31 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  React.useEffect(() => {
-    if (isConnected && user) {
-      navigate('/wallet');
-    }
-  }, [isConnected, user, navigate]);
+  // Remove the automatic redirect that's causing the issue
+  // Users will manually click to navigate
 
   const handleStartTrading = () => {
     console.log('Start Trading clicked, navigating to wallet');
+    // Direct navigation without conditions
     navigate('/wallet');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
+    }}>
       {/* Navigation */}
       <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">BD</span>
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            {/* Base Demo Logo inspired design */}
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-indigo-600 font-black text-lg transform -rotate-12">BD</span>
+            </div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+            <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
           </div>
-          <span className="text-xl font-bold text-white">Base Demo</span>
+          <span className="text-2xl font-bold text-white">Base Demo</span>
         </div>
         <div className="flex items-center space-x-4">
           <ConnectButton />
@@ -43,11 +48,11 @@ const Index = () => {
         <div className="text-center animate-fade-in">
           <h1 className="text-6xl font-bold text-white mb-6">
             Demo Trade Any{' '}
-            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
               Base Token
             </span>
           </h1>
-          <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-purple-100 mb-8 max-w-3xl mx-auto">
             Practice trading with real-time data and virtual BASE tokens. Perfect your strategy 
             on Base chain tokens without any risk. Start with 1500 USDC to begin trading.
           </p>
@@ -73,7 +78,7 @@ const Index = () => {
                       <Button
                         onClick={openConnectModal}
                         size="lg"
-                        className="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white px-8 py-4 text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+                        className="bg-white text-indigo-600 hover:bg-purple-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
                       >
                         Connect Wallet to Start Trading
                       </Button>
@@ -81,7 +86,7 @@ const Index = () => {
                       <Button
                         onClick={handleStartTrading}
                         size="lg"
-                        className="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white px-8 py-4 text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+                        className="bg-white text-indigo-600 hover:bg-purple-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
                       >
                         Start Trading
                       </Button>
@@ -95,37 +100,37 @@ const Index = () => {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-8 mt-20 animate-slide-up">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all bg-slate-800/50 border-slate-700">
+          <Card className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white/90 backdrop-blur-sm rounded-2xl">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🔍</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-white">Token Scanner</h3>
-              <p className="text-slate-300">
+              <h3 className="text-xl font-bold mb-3 text-indigo-900">Token Scanner</h3>
+              <p className="text-indigo-700">
                 Validate any Base token with real-time data from Dexscreener and BaseScan
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all bg-slate-800/50 border-slate-700">
+          <Card className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white/90 backdrop-blur-sm rounded-2xl">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📈</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-white">Live Charts & P&L</h3>
-              <p className="text-slate-300">
+              <h3 className="text-xl font-bold mb-3 text-indigo-900">Live Charts & P&L</h3>
+              <p className="text-indigo-700">
                 View real-time price charts and track your profit/loss on each position
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all bg-slate-800/50 border-slate-700">
+          <Card className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white/90 backdrop-blur-sm rounded-2xl">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💰</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-white">Risk-Free Trading</h3>
-              <p className="text-slate-300">
+              <h3 className="text-xl font-bold mb-3 text-indigo-900">Risk-Free Trading</h3>
+              <p className="text-indigo-700">
                 Start with 1500 USDC and track your performance with persistent data
               </p>
             </CardContent>
@@ -136,24 +141,24 @@ const Index = () => {
         <div className="mt-20 text-center">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <div className="text-3xl font-bold text-cyan-400 mb-2">1500 USDC</div>
-              <div className="text-slate-300">Starting Balance</div>
+              <div className="text-3xl font-bold text-white mb-2">1500 USDC</div>
+              <div className="text-purple-200">Starting Balance</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-cyan-400 mb-2">Real-Time</div>
-              <div className="text-slate-300">Market Data</div>
+              <div className="text-3xl font-bold text-white mb-2">Real-Time</div>
+              <div className="text-purple-200">Market Data</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-cyan-400 mb-2">Base Chain</div>
-              <div className="text-slate-300">Network Support</div>
+              <div className="text-3xl font-bold text-white mb-2">Base Chain</div>
+              <div className="text-purple-200">Network Support</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-700 mt-20 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-slate-400">
+      <footer className="border-t border-white/20 mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-6 text-center text-purple-200">
           <p>Built for educational purposes. Trade responsibly in real markets.</p>
         </div>
       </footer>
