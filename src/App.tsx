@@ -8,7 +8,7 @@ import { Web3Provider } from "@/providers/Web3Provider";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import TradingApp from "./pages/TradingApp";
-import Wallet from "./pages/Wallet";
+import Portfolio from "./pages/Portfolio";
 import TokenTradePage from "./pages/TokenTradePage";
 import NotFound from "./pages/NotFound";
 import PNLPage from "./pages/PNL";
@@ -28,7 +28,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/trade" element={<TradingApp />} />
-              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
               <Route path="/tasks" element={<TasksPage />} />

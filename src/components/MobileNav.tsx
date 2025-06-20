@@ -17,7 +17,7 @@ const MobileNav = () => {
 
   const menuItems = [
     { label: 'Trading', icon: Home, path: '/trade' },
-    { label: 'Wallet', icon: Wallet, path: '/wallet' },
+    { label: 'Portfolio', icon: Wallet, path: '/portfolio' },
     { label: 'P&L', icon: TrendingUp, path: '/pnl' },
     { label: 'Bounties', icon: Trophy, path: '/bounties' },
   ];
@@ -35,7 +35,7 @@ const MobileNav = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="bg-slate-900 border-slate-700 w-64">
+      <SheetContent side="left" className="bg-blue-600 border-blue-500 w-64">
         <SheetHeader>
           <SheetTitle className="text-white text-left">Navigation</SheetTitle>
         </SheetHeader>

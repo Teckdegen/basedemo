@@ -44,8 +44,8 @@ const TradingApp = () => {
   };
 
   const handleWalletClick = () => {
-    console.log('Wallet button clicked, navigating to /wallet');
-    navigate('/wallet');
+    console.log('Wallet button clicked, navigating to /portfolio');
+    navigate('/portfolio');
   };
 
   const handlePnLClick = () => {
@@ -60,8 +60,10 @@ const TradingApp = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen" style={{ background: '#6366f1' }}>
+        <div className="flex items-center justify-center min-h-screen text-white text-xl">
+          Loading...
+        </div>
       </div>
     );
   }
@@ -71,15 +73,24 @@ const TradingApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950">
+    <div className="min-h-screen" style={{ background: '#6366f1' }}>
       {/* Header */}
-      <nav className="sticky top-0 z-50 w-full px-4 py-3 bg-black/60 backdrop-blur-xl border-b border-white/10">
+      <nav className="sticky top-0 z-50 w-full px-4 py-3 bg-white/10 backdrop-blur-xl border-b border-white/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Mobile hamburger menu */}
             {isMobile && <MobileNav />}
             
-            <h1 className="text-2xl font-bold text-white">Base Trading</h1>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                  <span className="text-blue-600 font-black text-lg">BD</span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+                <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
+              </div>
+              <span className="text-2xl font-bold text-white">Base Demo</span>
+            </div>
             
             {/* Desktop navigation */}
             {!isMobile && (
@@ -91,7 +102,7 @@ const TradingApp = () => {
                   className="flex items-center gap-2 text-white hover:bg-white/10"
                 >
                   <Wallet className="w-4 h-4" />
-                  Wallet
+                  Portfolio
                 </Button>
                 <Button
                   variant="ghost"
@@ -116,15 +127,15 @@ const TradingApp = () => {
           </div>
           <div className="flex items-center gap-4">
             {profile?.username && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-cyan-500/20 rounded-full border border-cyan-400/30">
-                <User className="w-4 h-4 text-cyan-300" />
-                <span className="text-cyan-200 text-sm font-medium">{profile.username}</span>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
+                <User className="w-4 h-4 text-white" />
+                <span className="text-white text-sm font-medium">{profile.username}</span>
               </div>
             )}
             {supabaseProfile && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-400/30">
-                <Wallet className="w-4 h-4 text-green-300" />
-                <span className="text-green-200 text-sm font-medium">{supabaseProfile.base_balance.toFixed(2)} USDC</span>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
+                <Wallet className="w-4 h-4 text-white" />
+                <span className="text-white text-sm font-medium">{supabaseProfile.base_balance.toFixed(2)} USDC</span>
               </div>
             )}
             <ConnectButton />
@@ -137,8 +148,12 @@ const TradingApp = () => {
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Left Column - Token Scanner and Trending */}
           <div className={`space-y-8 ${isMobile ? '' : 'lg:col-span-2'}`}>
-            <TokenScanner onTokenSelect={handleTokenSelect} />
-            <TrendingTokens onTokenSelect={handleTokenSelect} />
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <TokenScanner onTokenSelect={handleTokenSelect} />
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <TrendingTokens onTokenSelect={handleTokenSelect} />
+            </div>
           </div>
           
           {/* Right Column - AI Chat */}
@@ -148,7 +163,7 @@ const TradingApp = () => {
                 <Dialog open={aiChatOpen} onOpenChange={setAiChatOpen}>
                   <DialogTrigger asChild>
                     <button
-                      className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg font-semibold mb-4 flex items-center justify-center gap-2 transition-all shadow-lg"
+                      className="w-full bg-white text-blue-600 hover:bg-blue-50 py-3 px-4 rounded-2xl font-semibold mb-4 flex items-center justify-center gap-2 transition-all shadow-xl"
                     >
                       <Bot className="w-5 h-5" />
                       Open AI Chat
@@ -160,7 +175,7 @@ const TradingApp = () => {
                 </Dialog>
               </>
             ) : (
-              <div className="h-full">
+              <div className="h-full bg-white rounded-2xl shadow-xl p-6">
                 <AiChat selectedToken={selectedToken} />
               </div>
             )}
