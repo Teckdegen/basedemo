@@ -16,13 +16,14 @@ const MobileNav = () => {
   const [open, setOpen] = useState(false);
 
   const menuItems = [
-    { label: 'Trading', icon: Home, path: '/app' },
+    { label: 'Trading', icon: Home, path: '/trade' },
     { label: 'Wallet', icon: Wallet, path: '/wallet' },
     { label: 'P&L', icon: TrendingUp, path: '/pnl' },
     { label: 'Bounties', icon: Trophy, path: '/bounties' },
   ];
 
   const handleNavigation = (path: string) => {
+    console.log('Mobile nav navigating to:', path);
     navigate(path);
     setOpen(false);
   };

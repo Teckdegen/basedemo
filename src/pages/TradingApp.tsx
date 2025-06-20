@@ -43,6 +43,21 @@ const TradingApp = () => {
     setSelectedToken(token);
   };
 
+  const handleWalletClick = () => {
+    console.log('Wallet button clicked, navigating to /wallet');
+    navigate('/wallet');
+  };
+
+  const handlePnLClick = () => {
+    console.log('PNL button clicked, navigating to /pnl');
+    navigate('/pnl');
+  };
+
+  const handleTasksClick = () => {
+    console.log('Tasks button clicked, navigating to /bounties');
+    navigate('/bounties');
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -72,7 +87,7 @@ const TradingApp = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/wallet')}
+                  onClick={handleWalletClick}
                   className="flex items-center gap-2 text-white hover:bg-white/10"
                 >
                   <Wallet className="w-4 h-4" />
@@ -81,7 +96,7 @@ const TradingApp = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/pnl')}
+                  onClick={handlePnLClick}
                   className="flex items-center gap-2 text-white hover:bg-white/10"
                 >
                   <TrendingUp className="w-4 h-4" />
@@ -90,7 +105,7 @@ const TradingApp = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/bounties')}
+                  onClick={handleTasksClick}
                   className="flex items-center gap-2 text-white hover:bg-white/10"
                 >
                   <TrendingUp className="w-4 h-4" />
