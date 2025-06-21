@@ -9,25 +9,17 @@ import { ArrowLeft, Wallet, TrendingUp, DollarSign, Activity, BarChart3, Eye, Tr
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLocalWallet } from '@/hooks/useLocalWallet';
+import { useBasePrice } from '@/hooks/useBasePrice';
 
 const DemoWallet = () => {
-  const { profile, holdings, trades, loading } = useSupabaseData();
+  const { profile, loading } = useSupabaseData();
   const { user, loading: authLoading } = useAuth();
   const { isConnected } = useAccount();
+  const { baseBalance, holdings } = useLocalWallet();
+  const { priceData: basePrice } = useBasePrice();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-
-  // Demo data for showcase
-  const demoHoldings = [
-    { symbol: 'ETH', name: 'Ethereum', amount: 2.45, value: 6125.50, change: +5.2 },
-    { symbol: 'BTC', name: 'Bitcoin', amount: 0.15, value: 4875.00, change: +2.1 },
-    { symbol: 'USDC', name: 'USD Coin', amount: 1500.00, value: 1500.00, change: 0.0 },
-    { symbol: 'SOL', name: 'Solana', amount: 45.2, value: 2850.60, change: -1.8 },
-  ];
-
-  const totalPortfolioValue = demoHoldings.reduce((sum, holding) => sum + holding.value, 0);
-  const totalChange = +245.80;
-  const totalChangePercent = +1.67;
 
   // Show loading while checking authentication
   if (loading || authLoading) {
@@ -39,6 +31,48 @@ const DemoWallet = () => {
       </div>
     );
   }
+
+  // Filter out USDC base token and calculate portfolio values
+  const tokenHoldings = holdings.filter(h => h.token_address !== 'base-usdc');
+  
+  // Calculate total portfolio value (USDC + all token holdings)
+  const totalTokenValue = tokenHoldings.reduce((sum, holding) => {
+    // Get token price from localStorage
+    const savedTokens = localStorage.getItem('scannedTokens');
+    let tokenPrice = 0;
+    if (savedTokens) {
+      const tokens = JSON.parse(savedTokens);
+      const token = tokens[holding.token_address];
+      if (token) {
+        tokenPrice = token.price / basePrice.usd; // Convert to BASE terms
+      }
+    }
+    return sum + (holding.amount * tokenPrice);
+  }, 0);
+
+  const totalPortfolioValue = baseBalance + totalTokenValue;
+  
+  // Calculate 24h change (simplified calculation)
+  const totalChange = totalTokenValue * 0.02; // Mock 2% change
+  const totalChangePercent = totalPortfolioValue > 0 ? (totalChange / totalPortfolioValue) * 100 : 0;
+
+  // Find best and worst performers
+  let bestPerformer = 'USDC';
+  let worstPerformer = 'USDC';
+  let bestChange = 0;
+  let worstChange = 0;
+
+  tokenHoldings.forEach(holding => {
+    const mockChange = Math.random() * 10 - 5; // Random change between -5% and +5%
+    if (mockChange > bestChange) {
+      bestChange = mockChange;
+      bestPerformer = holding.token_symbol;
+    }
+    if (mockChange < worstChange) {
+      worstChange = mockChange;
+      worstPerformer = holding.token_symbol;
+    }
+  });
 
   return (
     <div className="min-h-screen" style={{ background: '#6366f1' }}>
@@ -91,13 +125,13 @@ const DemoWallet = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="text-center">
               <div className="text-3xl font-bold text-white mb-2">
-                ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {totalPortfolioValue.toFixed(4)} BASE
               </div>
               <div className="text-blue-100">Total Value</div>
             </div>
             <div className="text-center">
               <div className={`text-3xl font-bold mb-2 ${totalChange >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                {totalChange >= 0 ? '+' : ''}${totalChange.toFixed(2)}
+                {totalChange >= 0 ? '+' : ''}{totalChange.toFixed(4)} BASE
               </div>
               <div className="text-blue-100">24h Change</div>
             </div>
@@ -118,8 +152,8 @@ const DemoWallet = () => {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">{demoHoldings.length}</div>
-              <p className="text-xs text-blue-600 mt-1">Different tokens</p>
+              <div className="text-2xl font-bold text-blue-900">{tokenHoldings.length + 1}</div>
+              <p className="text-xs text-blue-600 mt-1">Including USDC</p>
             </CardContent>
           </Card>
 
@@ -129,8 +163,8 @@ const DemoWallet = () => {
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">ETH</div>
-              <p className="text-xs text-green-600 mt-1">+5.2% today</p>
+              <div className="text-2xl font-bold text-green-600">{bestPerformer}</div>
+              <p className="text-xs text-green-600 mt-1">+{bestChange.toFixed(1)}% today</p>
             </CardContent>
           </Card>
 
@@ -140,19 +174,19 @@ const DemoWallet = () => {
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">SOL</div>
-              <p className="text-xs text-red-600 mt-1">-1.8% today</p>
+              <div className="text-2xl font-bold text-red-600">{worstPerformer}</div>
+              <p className="text-xs text-red-600 mt-1">{worstChange.toFixed(1)}% today</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-700">Allocation</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-700">USDC Balance</CardTitle>
               <BarChart3 className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">4</div>
-              <p className="text-xs text-blue-600 mt-1">Diversified</p>
+              <div className="text-2xl font-bold text-blue-900">{baseBalance.toFixed(2)}</div>
+              <p className="text-xs text-blue-600 mt-1">Available to trade</p>
             </CardContent>
           </Card>
         </div>
@@ -167,43 +201,98 @@ const DemoWallet = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {demoHoldings.map((holding, index) => (
-                <div
-                  key={index}
-                  className="bg-blue-50 rounded-xl p-4 border border-blue-200 hover:bg-blue-100 transition-all cursor-pointer"
-                  onClick={() => navigate('/trade')}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          {holding.symbol.slice(0, 2)}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-blue-900 text-lg">{holding.name}</div>
-                        <div className="text-blue-600">{holding.symbol}</div>
-                        <div className="text-sm text-blue-500">
-                          {holding.amount} {holding.symbol}
-                        </div>
-                      </div>
+              {/* USDC Base Balance */}
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">UC</span>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-blue-900 text-lg">
-                        ${holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className={`text-sm font-medium ${
-                        holding.change >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {holding.change >= 0 ? '+' : ''}{holding.change.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-blue-600">
-                        24h change
+                    <div>
+                      <div className="font-bold text-blue-900 text-lg">USD Coin</div>
+                      <div className="text-blue-600">USDC</div>
+                      <div className="text-sm text-blue-500">
+                        {baseBalance.toFixed(2)} USDC
                       </div>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <div className="font-bold text-blue-900 text-lg">
+                      {baseBalance.toFixed(2)} BASE
+                    </div>
+                    <div className="text-sm font-medium text-gray-600">
+                      0.0%
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      Stable coin
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Token Holdings */}
+              {tokenHoldings.map((holding, index) => {
+                // Get token price and data from localStorage
+                const savedTokens = localStorage.getItem('scannedTokens');
+                let tokenPrice = 0;
+                let tokenData = null;
+                if (savedTokens) {
+                  const tokens = JSON.parse(savedTokens);
+                  tokenData = tokens[holding.token_address];
+                  if (tokenData) {
+                    tokenPrice = tokenData.price / basePrice.usd;
+                  }
+                }
+
+                const currentValue = holding.amount * tokenPrice;
+                const pnl = currentValue - holding.total_invested;
+                const pnlPercent = holding.total_invested > 0 ? (pnl / holding.total_invested) * 100 : 0;
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-blue-50 rounded-xl p-4 border border-blue-200 hover:bg-blue-100 transition-all cursor-pointer"
+                    onClick={() => navigate(`/trade/${holding.token_address}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">
+                            {holding.token_symbol.slice(0, 2)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-bold text-blue-900 text-lg">{holding.token_name}</div>
+                          <div className="text-blue-600">{holding.token_symbol}</div>
+                          <div className="text-sm text-blue-500">
+                            {holding.amount.toFixed(6)} {holding.token_symbol}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-blue-900 text-lg">
+                          {currentValue.toFixed(4)} BASE
+                        </div>
+                        <div className={`text-sm font-medium ${
+                          pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {pnl >= 0 ? '+' : ''}{pnlPercent.toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-blue-600">
+                          P&L: {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} BASE
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {tokenHoldings.length === 0 && (
+                <div className="text-center py-8 text-blue-600">
+                  <p className="text-lg font-medium mb-2">No token holdings yet</p>
+                  <p className="text-sm text-blue-500">Start trading to see your tokens here!</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
