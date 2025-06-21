@@ -75,83 +75,81 @@ const TradingApp = () => {
   return (
     <div className="min-h-screen" style={{ background: '#6366f1' }}>
       {/* Header */}
-      <nav className="sticky top-0 z-50 w-full px-4 py-3 bg-white/10 backdrop-blur-xl border-b border-white/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Mobile hamburger menu */}
-            {isMobile && <MobileNav />}
-            
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-blue-600 font-black text-lg">BD</span>
-                </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
-                <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
+      <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-4">
+          {/* Mobile hamburger menu */}
+          {isMobile && <MobileNav />}
+          
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-blue-600 font-black text-lg">BD</span>
               </div>
-              <span className="text-2xl font-bold text-white">Base Demo</span>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+              <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
             </div>
-            
-            {/* Desktop navigation */}
-            {!isMobile && (
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleWalletClick}
-                  className="flex items-center gap-2 text-white hover:bg-white/10"
-                >
-                  <Wallet className="w-4 h-4" />
-                  Portfolio
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handlePnLClick}
-                  className="flex items-center gap-2 text-white hover:bg-white/10"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  PNL
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleTasksClick}
-                  className="flex items-center gap-2 text-white hover:bg-white/10"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Tasks
-                </Button>
-              </div>
-            )}
+            <span className="text-2xl font-bold text-white">Base Demo</span>
           </div>
-          <div className="flex items-center gap-4">
-            {profile?.username && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
-                <User className="w-4 h-4 text-white" />
-                <span className="text-white text-sm font-medium">{profile.username}</span>
-              </div>
-            )}
-            {supabaseProfile && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
-                <Wallet className="w-4 h-4 text-white" />
-                <span className="text-white text-sm font-medium">{supabaseProfile.base_balance.toFixed(2)} USDC</span>
-              </div>
-            )}
-            <ConnectButton />
-          </div>
+          
+          {/* Desktop navigation */}
+          {!isMobile && (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleWalletClick}
+                className="flex items-center gap-2 text-white hover:bg-white/10"
+              >
+                <Wallet className="w-4 h-4" />
+                Portfolio
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePnLClick}
+                className="flex items-center gap-2 text-white hover:bg-white/10"
+              >
+                <TrendingUp className="w-4 h-4" />
+                PNL
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleTasksClick}
+                className="flex items-center gap-2 text-white hover:bg-white/10"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Tasks
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {profile?.username && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
+              <User className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-medium">{profile.username}</span>
+            </div>
+          )}
+          {supabaseProfile && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full border border-white/30">
+              <Wallet className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-medium">{supabaseProfile.base_balance.toFixed(2)} USDC</span>
+            </div>
+          )}
+          <ConnectButton />
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Left Column - Token Scanner and Trending */}
           <div className={`space-y-8 ${isMobile ? '' : 'lg:col-span-2'}`}>
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white rounded-2xl p-6">
               <TokenScanner onTokenSelect={handleTokenSelect} />
             </div>
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="border-0 shadow-xl hover:shadow-2xl transition-all bg-white rounded-2xl p-6">
               <TrendingTokens onTokenSelect={handleTokenSelect} />
             </div>
           </div>
@@ -175,13 +173,20 @@ const TradingApp = () => {
                 </Dialog>
               </>
             ) : (
-              <div className="h-full bg-white rounded-2xl shadow-xl p-6">
+              <div className="h-full border-0 shadow-xl hover:shadow-2xl transition-all bg-white rounded-2xl p-6">
                 <AiChat selectedToken={selectedToken} />
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-white/20 mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-6 text-center text-blue-200">
+          <p>Built for educational purposes. Trade responsibly in real markets.</p>
+        </div>
+      </footer>
     </div>
   );
 };

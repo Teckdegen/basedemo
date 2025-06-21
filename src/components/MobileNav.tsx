@@ -35,7 +35,7 @@ const MobileNav = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="bg-blue-600 border-blue-500 w-64">
+      <SheetContent side="left" className="w-64" style={{ background: '#6366f1', borderColor: '#5856eb' }}>
         <SheetHeader>
           <SheetTitle className="text-white text-left">Navigation</SheetTitle>
         </SheetHeader>
