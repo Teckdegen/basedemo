@@ -44,8 +44,8 @@ const TradingApp = () => {
   };
 
   const handleWalletClick = () => {
-    console.log('Wallet button clicked, navigating to /portfolio');
-    navigate('/portfolio');
+    console.log('Wallet button clicked, navigating to /demowallet');
+    navigate('/demowallet');
   };
 
   const handlePnLClick = () => {

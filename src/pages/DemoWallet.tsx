@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -305,14 +304,6 @@ const DemoWallet = () => {
           >
             <Activity className="w-4 h-4 mr-2" />
             Start Trading
-          </Button>
-          <Button 
-            onClick={() => navigate('/portfolio')}
-            variant="outline"
-            className="border-white/30 text-white hover:bg-white/10 font-medium px-8 py-3 rounded-2xl border-2"
-          >
-            <Wallet className="w-4 h-4 mr-2" />
-            View Real Portfolio
           </Button>
           <Button 
             onClick={() => navigate('/pnl')}

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -113,49 +114,57 @@ const PNLPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#6366f1' }}>
         <span className="text-xl text-white">Loading...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      <nav className="sticky top-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/wallet")}
-                className="flex items-center text-white hover:bg-white/10"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                <span>Back to Wallet</span>
-              </Button>
-              <span className="ml-4 text-xl font-bold text-white">Profit &amp; Loss (PNL)</span>
+    <div className="min-h-screen" style={{ background: '#6366f1' }}>
+      {/* Header */}
+      <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/demowallet")}
+            className="flex items-center gap-2 text-white hover:bg-white/10 rounded-xl px-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden md:inline-block">Back to Portfolio</span>
+          </Button>
+          
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-blue-600 font-black text-lg">BD</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+              <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/app")}
-                className="flex items-center text-white hover:bg-white/10"
-              >
-                <TrendingUp className="w-4 h-4 mr-1" />
-                <span>Trade</span>
-              </Button>
-            </div>
+            <span className="text-2xl font-bold text-white">P&L Report</span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/trade")}
+            className="flex items-center gap-2 text-white hover:bg-white/10"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Trade
+          </Button>
         </div>
       </nav>
 
       <div className="max-w-3xl mx-auto p-4 sm:p-8">
-        <Card className="mb-6 bg-gradient-to-br from-purple-900/50 to-blue-900/50 border-purple-400/20 text-white">
+        <Card className="mb-6 bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-2xl">
             <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-lg sm:text-2xl">
-                    <Sparkles className="w-6 h-6 text-purple-400" />
+                    <Sparkles className="w-6 h-6 text-yellow-400" />
                     <span>AI Performance Summary</span>
                 </CardTitle>
             </CardHeader>
@@ -167,38 +176,38 @@ const PNLPage: React.FC = () => {
                         <Skeleton className="h-4 w-3/4 bg-slate-700" />
                     </div>
                 ) : (
-                    <p className="text-slate-300 whitespace-pre-line">
+                    <p className="text-blue-100 whitespace-pre-line">
                         {aiSummary}
                     </p>
                 )}
             </CardContent>
         </Card>
       
-        <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 text-white">
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white rounded-2xl">
           <CardHeader>
             <CardTitle className="text-lg sm:text-2xl">Token-wise Profit &amp; Loss</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-700">
+              <table className="min-w-full divide-y divide-white/20">
                 <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Token</th>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Avg Entry (BASE)</th>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Avg Exit (BASE)</th>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Total Bought</th>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Total Sold</th>
-                    <th className="px-3 py-2 text-left text-sm text-slate-400">Profit/Loss (BASE)</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Token</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Entry (BASE)</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Exit (BASE)</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Total Bought</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Total Sold</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Profit/Loss (BASE)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tokens.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-4 text-slate-400">No trades yet.</td>
+                      <td colSpan={6} className="text-center py-4 text-blue-200">No trades yet.</td>
                     </tr>
                   ) : (
                     tokens.map(token => (
-                      <tr key={token.address} className="odd:bg-slate-800/50 even:bg-slate-900/40">
+                      <tr key={token.address} className="odd:bg-white/5 even:bg-white/10">
                         <td className="px-3 py-2 font-semibold">{token.symbol}</td>
                         <td className="px-3 py-2">{token.avgBuy > 0 ? token.avgBuy.toFixed(6) : "--"}</td>
                         <td className="px-3 py-2">{token.avgSell > 0 ? token.avgSell.toFixed(6) : "--"}</td>
@@ -216,6 +225,13 @@ const PNLPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-white/20 mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-6 text-center text-blue-200">
+          <p>Built for educational purposes. Trade responsibly in real markets.</p>
+        </div>
+      </footer>
     </div>
   );
 };

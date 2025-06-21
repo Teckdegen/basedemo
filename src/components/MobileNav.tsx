@@ -17,7 +17,7 @@ const MobileNav = () => {
 
   const menuItems = [
     { label: 'Trading', icon: Home, path: '/trade' },
-    { label: 'Portfolio', icon: Wallet, path: '/portfolio' },
+    { label: 'Portfolio', icon: Wallet, path: '/demowallet' },
     { label: 'P&L', icon: TrendingUp, path: '/pnl' },
     { label: 'Bounties', icon: Trophy, path: '/bounties' },
   ];
