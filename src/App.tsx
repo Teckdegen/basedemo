@@ -29,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/trade" element={<TradingApp />} />
               <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/wallet" element={<Portfolio />} />
               <Route path="/pnl" element={<PNLPage />} />
               <Route path="/trade/:tokenAddress" element={<TokenTradePage />} />
               <Route path="/tasks" element={<TasksPage />} />
