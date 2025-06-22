@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, User, Send, Loader2, RefreshCcw, X, MessageCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DrawerClose } from "@/components/ui/drawer";
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 
 interface TokenData {
   address: string;
@@ -34,6 +35,7 @@ interface AiChatProps {
 }
 
 export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => {
+  const { profile, holdings, trades } = useSupabaseData();
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const savedMessages = localStorage.getItem('ai-chat-history');
@@ -82,16 +84,26 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
   const getWalletSystemPrompt = () => {
     let systemPrompt = "SYSTEM: You are 'Base Demo AI', an intelligent trading assistant specialized in cryptocurrency analysis. ";
     
-    if (walletInfo) {
-      const { balance, portfolio, tokenDetails } = walletInfo;
-      let holdings = Object.entries(portfolio)
-        .filter(([token, amount]) => amount > 0)
-        .map(([token, amount]) => {
-          const sym = tokenDetails[token]?.symbol || "";
-          return `${amount} ${sym}`.trim();
-        });
+    if (profile) {
+      const balance = profile.base_balance || 0;
+      let holdingsText = "none";
       
-      systemPrompt += `You are integrated with a demo trading wallet. The user's current wallet status: Balance: ${balance.toFixed(4)} USDC, Token holdings: ${holdings.join(", ") || "none"}. `;
+      if (holdings && holdings.length > 0) {
+        holdingsText = holdings
+          .filter(h => h.amount > 0)
+          .map(h => `${h.amount} ${h.token_symbol}`)
+          .join(", ");
+      }
+      
+      systemPrompt += `You are integrated with a demo trading wallet. The user's current wallet status: Balance: ${balance.toFixed(4)} USDC, Token holdings: ${holdingsText}. `;
+      
+      // Add PNL context if trades exist
+      if (trades && trades.length > 0) {
+        const totalTrades = trades.length;
+        const buyTrades = trades.filter(t => t.trade_type === 'buy').length;
+        const sellTrades = trades.filter(t => t.trade_type === 'sell').length;
+        systemPrompt += `Trading activity: ${totalTrades} total trades (${buyTrades} buys, ${sellTrades} sells). `;
+      }
     }
     
     systemPrompt += "If asked about your name or identity, respond that you are 'Base Demo AI'. " +
@@ -152,6 +164,19 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
     setMessages([{ role: 'model', content: "Hello! I'm Base Demo AI, your intelligent trading assistant. I can see your current wallet balance and help analyze tokens. How can I assist you today?" }]);
   };
 
+  // Create wallet info for display
+  const currentWalletInfo = profile ? {
+    balance: profile.base_balance || 0,
+    portfolio: holdings ? Object.fromEntries(holdings.map(h => [h.token_address, h.amount])) : {},
+    tokenDetails: holdings ? Object.fromEntries(holdings.map(h => [h.token_address, {
+      address: h.token_address,
+      name: h.token_name,
+      symbol: h.token_symbol,
+      price: h.average_buy_price,
+      priceChange24h: 0
+    }])) : {}
+  } : null;
+
   return (
     <div className="flex flex-col h-[70vh] bg-slate-900/80 backdrop-blur-sm rounded-t-lg">
       <div className="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -163,9 +188,9 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
             Base Demo AI
           </h2>
           <p className="text-sm text-slate-400">Your intelligent trading assistant</p>
-          {walletInfo && (
+          {profile && (
             <p className="text-xs text-green-400 mt-1">
-              💰 Balance: {walletInfo.balance.toFixed(2)} USDC • 📊 Holdings: {Object.entries(walletInfo.portfolio).filter(([_,v])=>v>0).length} tokens
+              💰 Balance: {profile.base_balance.toFixed(2)} USDC • 📊 Holdings: {holdings ? holdings.filter(h => h.amount > 0).length : 0} tokens
             </p>
           )}
         </div>
@@ -227,6 +252,7 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
                         </>
                     )}
                     <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Analyze my portfolio")}>Analyze portfolio</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Show my P&L")}>Show my P&L</Button>
                 </div>
             </div>
         )}

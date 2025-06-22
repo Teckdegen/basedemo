@@ -193,28 +193,42 @@ const PNLPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th className="px-3 py-2 text-left text-sm text-blue-200">Token</th>
-                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Entry (BASE)</th>
-                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Exit (BASE)</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Entry</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Avg Exit</th>
                     <th className="px-3 py-2 text-left text-sm text-blue-200">Total Bought</th>
                     <th className="px-3 py-2 text-left text-sm text-blue-200">Total Sold</th>
-                    <th className="px-3 py-2 text-left text-sm text-blue-200">Profit/Loss (BASE)</th>
+                    <th className="px-3 py-2 text-left text-sm text-blue-200">Profit/Loss</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tokens.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-4 text-blue-200">No trades yet.</td>
+                      <td colSpan={6} className="text-center py-8 text-blue-200">
+                        <div className="flex flex-col items-center gap-3">
+                          <TrendingUp className="w-12 h-12 text-blue-300/50" />
+                          <div>
+                            <p className="text-lg font-medium">No trades yet</p>
+                            <p className="text-sm text-blue-300">Start trading to see your P&L data here</p>
+                          </div>
+                          <Button
+                            onClick={() => navigate("/trade")}
+                            className="mt-2 bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                          >
+                            Start Trading
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ) : (
                     tokens.map(token => (
                       <tr key={token.address} className="odd:bg-white/5 even:bg-white/10">
                         <td className="px-3 py-2 font-semibold">{token.symbol}</td>
-                        <td className="px-3 py-2">{token.avgBuy > 0 ? token.avgBuy.toFixed(6) : "--"}</td>
-                        <td className="px-3 py-2">{token.avgSell > 0 ? token.avgSell.toFixed(6) : "--"}</td>
-                        <td className="px-3 py-2">{token.buyAmounts}</td>
-                        <td className="px-3 py-2">{token.sellAmounts}</td>
+                        <td className="px-3 py-2">{token.avgBuy > 0 ? `$${token.avgBuy.toFixed(6)}` : "--"}</td>
+                        <td className="px-3 py-2">{token.avgSell > 0 ? `$${token.avgSell.toFixed(6)}` : "--"}</td>
+                        <td className="px-3 py-2">{token.buyAmounts.toFixed(2)}</td>
+                        <td className="px-3 py-2">{token.sellAmounts.toFixed(2)}</td>
                         <td className={`px-3 py-2 font-bold ${token.realizedPNL >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {token.realizedPNL > 0 ? "+" : ""}{token.realizedPNL.toFixed(4)}
+                          {token.realizedPNL > 0 ? "+" : ""}${token.realizedPNL.toFixed(4)}
                         </td>
                       </tr>
                     ))

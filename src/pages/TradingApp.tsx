@@ -23,7 +23,7 @@ const TradingApp = () => {
   const navigate = useNavigate();
   const { isConnected } = useAccount();
   const { user, profile, loading: authLoading } = useAuth();
-  const { profile: supabaseProfile } = useSupabaseData();
+  const { profile: supabaseProfile, holdings } = useSupabaseData();
   const isMobile = useIsMobile();
   const [showUsernameOnboard, setShowUsernameOnboard] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
@@ -57,6 +57,19 @@ const TradingApp = () => {
     console.log('Tasks button clicked, navigating to /bounties');
     navigate('/bounties');
   };
+
+  // Create wallet info for AI
+  const walletInfo = supabaseProfile && holdings ? {
+    balance: supabaseProfile.base_balance,
+    portfolio: Object.fromEntries(holdings.map(h => [h.token_address, h.amount])),
+    tokenDetails: Object.fromEntries(holdings.map(h => [h.token_address, {
+      address: h.token_address,
+      name: h.token_name,
+      symbol: h.token_symbol,
+      price: h.average_buy_price,
+      priceChange24h: 0
+    }]))
+  } : null;
 
   if (authLoading) {
     return (
@@ -168,13 +181,13 @@ const TradingApp = () => {
                     </button>
                   </DialogTrigger>
                   <DialogContent className="p-0 max-w-lg w-full max-h-[80vh] flex flex-col">
-                    <AiChat selectedToken={selectedToken} inDialog />
+                    <AiChat selectedToken={selectedToken} inDialog walletInfo={walletInfo} />
                   </DialogContent>
                 </Dialog>
               </>
             ) : (
               <div className="h-full border-0 shadow-xl hover:shadow-2xl transition-all bg-white rounded-2xl p-6">
-                <AiChat selectedToken={selectedToken} />
+                <AiChat selectedToken={selectedToken} walletInfo={walletInfo} />
               </div>
             )}
           </div>

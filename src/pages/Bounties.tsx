@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -219,29 +220,27 @@ const TasksPage = () => {
     });
   };
 
-  // Get minimum datetime for datetime-local input (current time) - NOT USED ANYMORE
-  // const getMinDateTime = () => {
-  //   const now = new Date();
-  //   return now.toISOString().slice(0, 16);
-  // };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-900 to-slate-950 pb-8">
+    <div className="min-h-screen" style={{ background: '#6366f1' }}>
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center mb-8 animate-fade-in">
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/wallet")} 
+            onClick={() => navigate("/demowallet")} 
             className="mr-4 text-white hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Wallet
           </Button>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg">
-              <Trophy className="w-8 h-8 text-white" />
+            <div className="relative">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-blue-600 font-black text-lg">BD</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
+              <div className="absolute top-2 -right-2 w-2 h-2 bg-white rounded-full"></div>
             </div>
             <div>
               <h1 className="text-4xl font-bold text-white">Tasks</h1>
@@ -251,7 +250,7 @@ const TasksPage = () => {
         </div>
 
         {/* Create Task Card */}
-        <Card className="mb-8 bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-cyan-500/20 shadow-2xl backdrop-blur-sm animate-slide-up">
+        <Card className="mb-8 bg-white/10 backdrop-blur-sm border-white/20 shadow-2xl rounded-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-2xl">
               <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg">
@@ -274,7 +273,7 @@ const TasksPage = () => {
                   Task Title
                 </label>
                 <input
-                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                  className="w-full bg-white/10 text-white border border-white/30 rounded-lg p-4 
                            focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all
                            placeholder:text-slate-400"
                   required
@@ -287,7 +286,7 @@ const TasksPage = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-cyan-300">Description</label>
                 <textarea
-                  className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                  className="w-full bg-white/10 text-white border border-white/30 rounded-lg p-4 
                            focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all
                            placeholder:text-slate-400 min-h-[100px] resize-none"
                   placeholder="Describe your task challenge..."
@@ -303,7 +302,7 @@ const TasksPage = () => {
                     Entry Price (USDC)
                   </label>
                   <input
-                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                    className="w-full bg-white/10 text-white border border-white/30 rounded-lg p-4 
                              focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
                     required
                     type="number"
@@ -321,7 +320,7 @@ const TasksPage = () => {
                     Duration (hours) *
                   </label>
                   <input
-                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                    className="w-full bg-white/10 text-white border border-white/30 rounded-lg p-4 
                              focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
                     required
                     type="number"
@@ -339,7 +338,7 @@ const TasksPage = () => {
                     Min. Participants *
                   </label>
                   <input
-                    className="w-full bg-slate-900/80 text-white border border-cyan-400/30 rounded-lg p-4 
+                    className="w-full bg-white/10 text-white border border-white/30 rounded-lg p-4 
                              focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
                     required
                     type="number"
@@ -396,9 +395,9 @@ const TasksPage = () => {
               </div>
             </div>
           ) : tasks.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700/50 text-center py-12">
+            <Card className="bg-white/10 border-white/20 text-center py-12 rounded-2xl">
               <CardContent>
-                <Trophy className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <Trophy className="w-16 h-16 text-white/50 mx-auto mb-4" />
                 <p className="text-cyan-200 text-lg">No tasks yet.</p>
                 <p className="text-slate-400">Create the first one above!</p>
               </CardContent>
@@ -424,6 +423,13 @@ const TasksPage = () => {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-white/20 mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-6 text-center text-blue-200">
+          <p>Built for educational purposes. Trade responsibly in real markets.</p>
+        </div>
+      </footer>
     </div>
   );
 };
@@ -480,9 +486,9 @@ function TaskCard({
   };
 
   return (
-    <Card className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-cyan-400/20 shadow-xl 
+    <Card className="bg-white/10 backdrop-blur-sm border-white/20 shadow-xl 
                    hover:shadow-2xl hover:border-cyan-400/40 transition-all duration-300 
-                   hover:transform hover:scale-[1.02] backdrop-blur-sm">
+                   hover:transform hover:scale-[1.02] rounded-2xl">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4 cursor-pointer" onClick={onDetail}>
           <div className="flex-1">
@@ -518,7 +524,7 @@ function TaskCard({
               {task.created_by === adminWallet ? "Admin" : `${task.created_by.substring(0, 8)}...`}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-slate-500">
+          <div className="flex items-center gap-2 text-slate-300">
             <Clock className="w-4 h-4" />
             <span>{new Date(task.created_at).toLocaleString()}</span>
           </div>
@@ -582,9 +588,9 @@ function TaskCard({
             )}
           </div>
           
-          <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+          <div className="bg-white/10 rounded-lg p-3 border border-white/20">
             <div className="text-xs text-cyan-300 mb-1">Send payment to:</div>
-            <div className="text-xs font-mono text-green-400 break-all bg-slate-800/50 p-2 rounded border">
+            <div className="text-xs font-mono text-green-400 break-all bg-white/5 p-2 rounded border">
               {adminWallet}
             </div>
             <div className="text-xs text-yellow-300 mt-1">
