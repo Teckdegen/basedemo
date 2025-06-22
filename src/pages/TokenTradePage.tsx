@@ -18,7 +18,7 @@ const TokenTradePage = () => {
   const { isConnected } = useAccount();
   const { user, profile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
-  const { baseBalance, addTrade, holdings } = useLocalWallet();
+  const { baseBalance, executeTrade, holdings } = useLocalWallet();
   
   const [token, setToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
@@ -65,19 +65,23 @@ const TokenTradePage = () => {
     setIsLoading(true);
 
     try {
-      await addTrade({
-        token_address: tokenAddress!,
-        token_symbol: token.symbol,
-        token_name: token.name,
-        amount: tradeAmount,
-        price_per_token: token.priceInBase,
-        total_base: totalCost,
-        trade_type: tradeType,
-        tx_hash: `demo_${Date.now()}`
-      });
+      const result = await executeTrade(
+        tokenAddress!,
+        token.symbol,
+        token.name,
+        tradeType,
+        tradeAmount,
+        token.priceInBase,
+        totalCost,
+        basePrice.usd
+      );
 
-      alert(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${token.symbol}!`);
-      setAmount('');
+      if (result.error) {
+        alert(result.error);
+      } else {
+        alert(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${token.symbol}!`);
+        setAmount('');
+      }
     } catch (error) {
       console.error('Trade error:', error);
       alert('Trade failed');
@@ -181,7 +185,7 @@ const TokenTradePage = () => {
                 <CardTitle className="text-blue-900">Price Chart</CardTitle>
               </CardHeader>
               <CardContent>
-                <TokenChart tokenAddress={tokenAddress} />
+                <TokenChart tokenData={token} />
               </CardContent>
             </Card>
           </div>
