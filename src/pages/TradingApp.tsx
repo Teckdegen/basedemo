@@ -167,72 +167,24 @@ const TradingApp = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-blue-200 text-sm">Total Balance</div>
-                <div className="text-white text-xl font-bold">${supabaseProfile?.base_balance.toFixed(2) || '0.00'}</div>
-              </div>
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-blue-300" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-blue-200 text-sm">Active Positions</div>
-                <div className="text-white text-xl font-bold">{holdings?.length || 0}</div>
-              </div>
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-300" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-blue-200 text-sm">Today's P&L</div>
-                <div className="text-green-400 text-xl font-bold">+$0.00</div>
-              </div>
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-purple-300" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-blue-200 text-sm">Market Status</div>
-                <div className="text-green-400 text-xl font-bold">Live</div>
-              </div>
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-yellow-300" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
           {/* Left Column - Token Scanner and Trending */}
           <div className={`space-y-8 ${isMobile ? '' : 'lg:col-span-2'}`}>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
+            <div className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
                   <span className="text-white text-lg">🔍</span>
                 </div>
-                <h2 className="text-xl font-bold text-white">Token Scanner</h2>
+                <h2 className="text-xl font-bold text-gray-800">Token Scanner</h2>
               </div>
               <TokenScanner onTokenSelect={handleTokenSelect} />
             </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
+            <div className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-bold text-white">Trending Tokens</h2>
+                <h2 className="text-xl font-bold text-gray-800">Trending Tokens</h2>
               </div>
               <TrendingTokens onTokenSelect={handleTokenSelect} />
             </div>
@@ -257,12 +209,12 @@ const TradingApp = () => {
                 </Dialog>
               </>
             ) : (
-              <div className="h-full bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
+              <div className="h-full bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
                     <Bot className="w-6 h-6 text-white" />
                   </div>
-                  <h2 className="text-xl font-bold text-white">AI Trading Assistant</h2>
+                  <h2 className="text-xl font-bold text-gray-800">AI Trading Assistant</h2>
                 </div>
                 <AiChat selectedToken={selectedToken} walletInfo={walletInfo} />
               </div>
