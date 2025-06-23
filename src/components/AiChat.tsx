@@ -24,8 +24,27 @@ interface Message {
 
 interface WalletInfo {
   balance: number;
-  portfolio: Record<string, number>;
+  balanceUSD: number;
+  totalTrades: number;
+  portfolio: Record<string, {
+    amount: number;
+    symbol: string;
+    name: string;
+    averageBuyPrice: number;
+    totalInvested: number;
+    currentPrice: number;
+    currentValueUSDC: number;
+    pnl: number;
+  }>;
   tokenDetails: Record<string, TokenData>;
+  recentTrades: Array<{
+    symbol: string;
+    type: string;
+    amount: number;
+    price: number;
+    total: number;
+    date: string;
+  }>;
 }
 
 interface AiChatProps {
@@ -80,34 +99,57 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
     return match ? match[0] : null;
   };
 
-  // Enhanced system message with wallet context and AI identity
+  // Enhanced system message with comprehensive wallet context and AI identity
   const getWalletSystemPrompt = () => {
     let systemPrompt = "SYSTEM: You are 'Base Demo AI', an intelligent trading assistant specialized in cryptocurrency analysis. ";
     
-    if (profile) {
-      const balance = profile.base_balance || 0;
-      let holdingsText = "none";
-      
-      if (holdings && holdings.length > 0) {
-        holdingsText = holdings
-          .filter(h => h.amount > 0)
-          .map(h => `${h.amount} ${h.token_symbol}`)
-          .join(", ");
+    if (walletInfo && profile) {
+      systemPrompt += `You have FULL ACCESS to the user's portfolio data. Current status:
+
+WALLET OVERVIEW:
+- USDC Balance: ${walletInfo.balance.toFixed(4)} USDC (${walletInfo.balanceUSD.toFixed(2)} USD)
+- Total Portfolio Value: ${(walletInfo.balance + Object.values(walletInfo.portfolio).reduce((sum, token) => sum + token.currentValueUSDC, 0)).toFixed(4)} USDC
+- Total Trades: ${walletInfo.totalTrades}
+- Active Holdings: ${Object.keys(walletInfo.portfolio).length} tokens
+
+TOKEN HOLDINGS:`;
+
+      Object.values(walletInfo.portfolio).forEach(token => {
+        const pnlPercent = token.totalInvested > 0 ? ((token.pnl / token.totalInvested) * 100) : 0;
+        systemPrompt += `
+- ${token.name} (${token.symbol}): ${token.amount.toFixed(6)} tokens
+  * Current Value: ${token.currentValueUSDC.toFixed(4)} USDC
+  * Invested: ${token.totalInvested.toFixed(4)} USDC
+  * P&L: ${token.pnl.toFixed(4)} USDC (${pnlPercent.toFixed(1)}%)
+  * Avg Buy Price: ${token.averageBuyPrice.toFixed(6)} USDC
+  * Current Price: ${token.currentPrice.toFixed(6)} USDC`;
+      });
+
+      if (walletInfo.recentTrades.length > 0) {
+        systemPrompt += `
+
+RECENT TRADES:`;
+        walletInfo.recentTrades.forEach(trade => {
+          systemPrompt += `
+- ${trade.type.toUpperCase()} ${trade.amount.toFixed(4)} ${trade.symbol} at ${trade.price.toFixed(6)} USDC (Total: ${trade.total.toFixed(4)} USDC)`;
+        });
       }
-      
-      systemPrompt += `You are integrated with a demo trading wallet. The user's current wallet status: Balance: ${balance.toFixed(4)} USDC, Token holdings: ${holdingsText}. `;
-      
-      // Add PNL context if trades exist
-      if (trades && trades.length > 0) {
-        const totalTrades = trades.length;
-        const buyTrades = trades.filter(t => t.trade_type === 'buy').length;
-        const sellTrades = trades.filter(t => t.trade_type === 'sell').length;
-        systemPrompt += `Trading activity: ${totalTrades} total trades (${buyTrades} buys, ${sellTrades} sells). `;
-      }
+
+      systemPrompt += `
+
+You can answer questions about:
+- Current portfolio value and holdings
+- Individual token performance and P&L
+- Trading history and patterns
+- Investment recommendations based on current positions
+- Portfolio diversification analysis
+- Risk assessment of current holdings`;
+    } else {
+      systemPrompt += "The user doesn't appear to be connected or have portfolio data available. Please ask them to connect their wallet to access portfolio features.";
     }
     
-    systemPrompt += "If asked about your name or identity, respond that you are 'Base Demo AI'. " +
-      "You can analyze contract addresses, provide trading insights, and answer questions about the user's portfolio. " +
+    systemPrompt += " If asked about your name or identity, respond that you are 'Base Demo AI'. " +
+      "You can analyze contract addresses, provide trading insights, and answer detailed questions about the user's portfolio. " +
       "Always be helpful, concise, and focus on actionable trading advice. " +
       "If the user sends an EVM contract address (0x...), analyze that token and provide helpful insights.";
     
@@ -164,17 +206,11 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
     setMessages([{ role: 'model', content: "Hello! I'm Base Demo AI, your intelligent trading assistant. I can see your current wallet balance and help analyze tokens. How can I assist you today?" }]);
   };
 
-  // Create wallet info for display
-  const currentWalletInfo = profile ? {
-    balance: profile.base_balance || 0,
-    portfolio: holdings ? Object.fromEntries(holdings.map(h => [h.token_address, h.amount])) : {},
-    tokenDetails: holdings ? Object.fromEntries(holdings.map(h => [h.token_address, {
-      address: h.token_address,
-      name: h.token_name,
-      symbol: h.token_symbol,
-      price: h.average_buy_price,
-      priceChange24h: 0
-    }])) : {}
+  // Create portfolio summary for display
+  const portfolioSummary = walletInfo ? {
+    totalValue: walletInfo.balance + Object.values(walletInfo.portfolio).reduce((sum, token) => sum + token.currentValueUSDC, 0),
+    totalPnL: Object.values(walletInfo.portfolio).reduce((sum, token) => sum + token.pnl, 0),
+    holdingsCount: Object.keys(walletInfo.portfolio).length
   } : null;
 
   return (
@@ -188,9 +224,9 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
             Base Demo AI
           </h2>
           <p className="text-sm text-slate-400">Your intelligent trading assistant</p>
-          {profile && (
+          {portfolioSummary && (
             <p className="text-xs text-green-400 mt-1">
-              💰 Balance: {profile.base_balance.toFixed(2)} USDC • 📊 Holdings: {holdings ? holdings.filter(h => h.amount > 0).length : 0} tokens
+              💰 Portfolio: {portfolioSummary.totalValue.toFixed(2)} USDC • 📊 Holdings: {portfolioSummary.holdingsCount} tokens • P&L: {portfolioSummary.totalPnL >= 0 ? '+' : ''}{portfolioSummary.totalPnL.toFixed(2)} USDC
             </p>
           )}
         </div>
@@ -244,15 +280,15 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
             <div className="p-4 pt-0">
                 <p className="text-sm text-slate-400 mb-3">Try asking me:</p>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What's my current balance?")}>My balance?</Button>
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What are some trending tokens?")}>Trending tokens?</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What's my portfolio worth?")}>Portfolio value?</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Show my P&L breakdown")}>P&L breakdown</Button>
                     {selectedToken && (
                         <>
                             <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick(`Analyze ${selectedToken.symbol}`)}>Analyze {selectedToken.symbol}</Button>
                         </>
                     )}
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Analyze my portfolio")}>Analyze portfolio</Button>
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Show my P&L")}>Show my P&L</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("What are my best performing tokens?")}>Best performers</Button>
+                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300" onClick={() => handlePromptClick("Should I diversify my portfolio?")}>Diversification advice</Button>
                 </div>
             </div>
         )}
@@ -262,7 +298,7 @@ export const AiChat = ({ selectedToken, inDialog, walletInfo }: AiChatProps) => 
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your balance, send a contract address, or get trading insights..."
+            placeholder="Ask about your portfolio, send a contract address, or get trading insights..."
             className="bg-slate-800 border-slate-700 text-white placeholder-slate-500"
             disabled={isLoading}
           />

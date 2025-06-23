@@ -11,6 +11,7 @@ import { Wallet, User, TrendingUp, MessageCircle, Bot, BarChart3, Activity, Zap 
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useBasePrice } from '@/hooks/useBasePrice';
 import UsernameOnboard from '@/components/UsernameOnboard';
 import MobileNav from '@/components/MobileNav';
 import {
@@ -23,7 +24,8 @@ const TradingApp = () => {
   const navigate = useNavigate();
   const { isConnected } = useAccount();
   const { user, profile, loading: authLoading } = useAuth();
-  const { profile: supabaseProfile, holdings } = useSupabaseData();
+  const { profile: supabaseProfile, holdings, trades } = useSupabaseData();
+  const { priceData: basePrice } = useBasePrice();
   const isMobile = useIsMobile();
   const [showUsernameOnboard, setShowUsernameOnboard] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
@@ -58,17 +60,70 @@ const TradingApp = () => {
     navigate('/bounties');
   };
 
-  // Create wallet info for AI
-  const walletInfo = supabaseProfile && holdings ? {
+  // Create comprehensive wallet info for AI with current market prices
+  const walletInfo = supabaseProfile && holdings && basePrice ? {
     balance: supabaseProfile.base_balance,
-    portfolio: Object.fromEntries(holdings.map(h => [h.token_address, h.amount])),
+    balanceUSD: supabaseProfile.base_balance * basePrice.usd,
+    totalTrades: trades?.length || 0,
+    portfolio: Object.fromEntries(holdings.map(h => [h.token_address, {
+      amount: h.amount,
+      symbol: h.token_symbol,
+      name: h.token_name,
+      averageBuyPrice: h.average_buy_price,
+      totalInvested: h.total_invested,
+      currentPrice: (() => {
+        // Get current price from localStorage tokens
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            return tokenData.price / basePrice.usd; // Convert to USDC terms
+          }
+        }
+        return h.average_buy_price; // Fallback to avg buy price
+      })(),
+      currentValueUSDC: (() => {
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            const currentPrice = tokenData.price / basePrice.usd;
+            return h.amount * currentPrice;
+          }
+        }
+        return h.amount * h.average_buy_price;
+      })(),
+      pnl: (() => {
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            const currentPrice = tokenData.price / basePrice.usd;
+            const currentValue = h.amount * currentPrice;
+            return currentValue - h.total_invested;
+          }
+        }
+        return 0;
+      })()
+    }])),
     tokenDetails: Object.fromEntries(holdings.map(h => [h.token_address, {
       address: h.token_address,
       name: h.token_name,
       symbol: h.token_symbol,
       price: h.average_buy_price,
       priceChange24h: 0
-    }]))
+    }])),
+    recentTrades: trades?.slice(0, 5).map(trade => ({
+      symbol: trade.token_symbol,
+      type: trade.trade_type,
+      amount: trade.amount,
+      price: trade.price_per_token,
+      total: trade.total_base,
+      date: trade.created_at
+    })) || []
   } : null;
 
   if (authLoading) {
