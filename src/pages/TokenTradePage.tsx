@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -92,7 +91,7 @@ const TokenTradePage = () => {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
+      <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">Loading token data...</div>
         </div>
@@ -101,50 +100,48 @@ const TokenTradePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700">
+    <div className="min-h-screen" style={{ background: '#6366f1' }}>
       {/* Header */}
-      <nav className="border-b border-white/10 backdrop-blur-md bg-white/5">
-        <div className="flex justify-between items-center p-6 max-w-7xl mx-auto">
-          <div className="flex items-center gap-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/trade')}
-              className="flex items-center gap-2 text-white hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden md:inline-block">Back to Trading</span>
-            </Button>
-            
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-white to-blue-100 rounded-2xl flex items-center justify-center shadow-2xl border border-white/20">
-                  <span className="text-blue-700 font-black text-xl">BD</span>
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-lg"></div>
-                <div className="absolute top-2 -right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+      <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/trade')}
+            className="flex items-center gap-2 text-white hover:bg-white/10 rounded-xl px-4 py-2 font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden md:inline-block">Back to Trading</span>
+          </Button>
+          
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-blue-600 font-black text-lg">BD</span>
               </div>
-              <div>
-                <span className="text-2xl font-bold text-white">{token.symbol} Trading</span>
-                <div className="text-blue-200 text-sm font-medium">Digital Trading Platform</div>
-              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-lg"></div>
+              <div className="absolute top-2 -right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-white">{token.symbol} Trading</span>
+              <div className="text-blue-200 text-sm font-medium">Digital Trading Platform</div>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            {profile?.username && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm">
-                <User className="w-4 h-4 text-white" />
-                <span className="text-white text-sm font-medium">{profile.username}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl border border-white/20 backdrop-blur-sm">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-white text-sm font-medium">{baseBalance.toFixed(2)} USDC</span>
+        <div className="flex items-center gap-4">
+          {profile?.username && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
+              <User className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-medium">{profile.username}</span>
             </div>
-            <div className="bg-white/10 rounded-xl border border-white/20 backdrop-blur-sm overflow-hidden">
-              <ConnectButton />
-            </div>
+          )}
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl backdrop-blur-sm">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-white text-sm font-medium">{baseBalance.toFixed(2)} USDC</span>
+          </div>
+          <div className="bg-white/10 rounded-xl backdrop-blur-sm overflow-hidden">
+            <ConnectButton />
           </div>
         </div>
       </nav>
@@ -155,7 +152,7 @@ const TokenTradePage = () => {
           {/* Left Column - Token Info & Chart */}
           <div className="space-y-6">
             {/* Token Price Card */}
-            <Card className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl">
+            <Card className="bg-white/95 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -194,7 +191,7 @@ const TokenTradePage = () => {
             </Card>
 
             {/* Chart */}
-            <Card className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl">
+            <Card className="bg-white/95 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-gray-800">Price Chart</CardTitle>
               </CardHeader>
@@ -208,7 +205,7 @@ const TokenTradePage = () => {
           <div className="space-y-6">
             {/* Your Position */}
             {currentHolding && (
-              <Card className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl">
+              <Card className="bg-white/95 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl">
                 <CardHeader>
                   <CardTitle className="text-gray-800 flex items-center gap-2">
                     <Activity className="w-5 h-5" />
@@ -260,7 +257,7 @@ const TokenTradePage = () => {
             )}
 
             {/* Trade Interface */}
-            <Card className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-2xl">
+            <Card className="bg-white/95 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-gray-800">Trade {token.symbol}</CardTitle>
               </CardHeader>
@@ -377,7 +374,7 @@ const TokenTradePage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 mt-20 py-8 bg-white/5 backdrop-blur-sm">
+      <footer className="border-t border-white/20 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-6 text-center text-blue-200">
           <p className="text-sm">Built for educational purposes. Trade responsibly in real markets.</p>
           <div className="flex items-center justify-center gap-4 mt-4 text-xs text-blue-300">
