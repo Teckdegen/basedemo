@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, TrendingUp, TrendingDown, Activity, DollarSign, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { useLocalWallet } from '@/hooks/useLocalWallet';
 import { useBasePrice } from '@/hooks/useBasePrice';
 import TokenChart from '@/components/TokenChart';
 
@@ -17,7 +16,7 @@ const TokenTradePage = () => {
   const { isConnected } = useAccount();
   const { user, profile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
-  const { baseBalance, executeTrade, holdings } = useLocalWallet();
+  const { profile: supabaseProfile, holdings, executeTrade } = useSupabaseData();
   
   const [token, setToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
@@ -26,6 +25,7 @@ const TokenTradePage = () => {
 
   // Get current holding for this token
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
+  const baseBalance = supabaseProfile?.base_balance || 0;
 
   useEffect(() => {
     // Get token data from localStorage
@@ -44,7 +44,7 @@ const TokenTradePage = () => {
   }, [tokenAddress, basePrice.usd]);
 
   const handleTrade = async () => {
-    if (!token || !amount || !profile) return;
+    if (!token || !amount || !supabaseProfile) return;
 
     const tradeAmount = parseFloat(amount);
     const totalCost = tradeAmount * token.priceInBase;
