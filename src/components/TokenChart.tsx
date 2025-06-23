@@ -59,7 +59,7 @@ const TokenChart: React.FC<TokenChartProps> = ({ tokenData }) => {
   const formatPrice = (value: number) => `$${value.toFixed(6)}`;
 
   return (
-    <Card className="bg-black/40 backdrop-blur-md border-white/20 text-white">
+    <Card className="bg-transparent backdrop-blur-md border-white/20 text-white">
       <CardHeader className="pb-4">
         <CardTitle className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex items-center space-x-3">
