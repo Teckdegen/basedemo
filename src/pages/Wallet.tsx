@@ -12,6 +12,7 @@ import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { WalletCard } from "@/components/ui/WalletCard";
 import { AiChat } from '@/components/AiChat';
+import { useBasePrice } from '@/hooks/useBasePrice';
 
 const Wallet = () => {
   const { profile, holdings, trades, loading } = useSupabaseData();
@@ -19,6 +20,7 @@ const Wallet = () => {
   const { isConnected } = useAccount();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { priceData: basePrice } = useBasePrice();
 
   // Portfolio data
   const portfolioData: Record<string, number> = {};
@@ -30,17 +32,76 @@ const Wallet = () => {
       address: h.token_address,
       name: h.token_name,
       symbol: h.token_symbol,
-      price: 1,
+      price: h.average_buy_price,
       priceChange24h: 0,
     };
   });
 
-  // Attach wallet info for AI
-  const walletInfo = {
-    balance: profile?.base_balance || 0,
-    portfolio: portfolioData,
-    tokenDetails: tokenDetails,
-  };
+  // Create comprehensive wallet info for AI with current market prices
+  const walletInfo = profile && basePrice ? {
+    balance: profile.base_balance,
+    balanceUSD: profile.base_balance * basePrice.usd,
+    totalTrades: trades?.length || 0,
+    portfolio: Object.fromEntries(holdings.map(h => [h.token_address, {
+      amount: h.amount,
+      symbol: h.token_symbol,
+      name: h.token_name,
+      averageBuyPrice: h.average_buy_price,
+      totalInvested: h.total_invested,
+      currentPrice: (() => {
+        // Get current price from localStorage tokens
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            return tokenData.price / basePrice.usd; // Convert to USDC terms
+          }
+        }
+        return h.average_buy_price; // Fallback to avg buy price
+      })(),
+      currentValueUSDC: (() => {
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            const currentPrice = tokenData.price / basePrice.usd;
+            return h.amount * currentPrice;
+          }
+        }
+        return h.amount * h.average_buy_price;
+      })(),
+      pnl: (() => {
+        const savedTokens = localStorage.getItem('scannedTokens');
+        if (savedTokens) {
+          const tokens = JSON.parse(savedTokens);
+          const tokenData = tokens[h.token_address];
+          if (tokenData) {
+            const currentPrice = tokenData.price / basePrice.usd;
+            const currentValue = h.amount * currentPrice;
+            return currentValue - h.total_invested;
+          }
+        }
+        return 0;
+      })()
+    }])),
+    tokenDetails: Object.fromEntries(holdings.map(h => [h.token_address, {
+      address: h.token_address,
+      name: h.token_name,
+      symbol: h.token_symbol,
+      price: h.average_buy_price,
+      priceChange24h: 0
+    }])),
+    recentTrades: trades?.slice(0, 5).map(trade => ({
+      symbol: trade.token_symbol,
+      type: trade.trade_type,
+      amount: trade.amount,
+      price: trade.price_per_token,
+      total: trade.total_base,
+      date: trade.created_at
+    })) || []
+  } : null;
 
   // Show loading while checking authentication
   if (loading || authLoading) {
