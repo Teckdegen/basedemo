@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -14,18 +15,21 @@ const TokenTradePage = () => {
   const { tokenAddress } = useParams();
   const navigate = useNavigate();
   const { isConnected } = useAccount();
-  const { user, profile } = useAuth();
+  const { user, profile: authProfile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
-  const { profile: supabaseProfile, holdings, executeTrade } = useSupabaseData();
+  const { profile: supabaseProfile, holdings, executeTrade, refreshData } = useSupabaseData();
   
   const [token, setToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
-  // Get current holding for this token
+  // Use supabaseProfile for balance (this is the correct, synced data)
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
   const baseBalance = supabaseProfile?.base_balance || 0;
+
+  console.log('TokenTradePage - Current balance:', baseBalance);
+  console.log('TokenTradePage - Current holding:', currentHolding);
 
   useEffect(() => {
     // Get token data from localStorage
@@ -44,19 +48,35 @@ const TokenTradePage = () => {
   }, [tokenAddress, basePrice.usd]);
 
   const handleTrade = async () => {
-    if (!token || !amount || !supabaseProfile) return;
+    if (!token || !amount || !supabaseProfile) {
+      console.log('Missing required data for trade:', { token: !!token, amount, profile: !!supabaseProfile });
+      return;
+    }
 
     const tradeAmount = parseFloat(amount);
+    if (isNaN(tradeAmount) || tradeAmount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
     const totalCost = tradeAmount * token.priceInBase;
+    console.log('Trade attempt:', {
+      tradeType,
+      tradeAmount,
+      pricePerToken: token.priceInBase,
+      totalCost,
+      currentBalance: baseBalance,
+      currentHolding: currentHolding?.amount || 0
+    });
 
     if (tradeType === 'buy') {
       if (totalCost > baseBalance) {
-        alert('Insufficient USDC balance');
+        alert(`Insufficient USDC balance. You need ${totalCost.toFixed(4)} USDC but only have ${baseBalance.toFixed(4)} USDC`);
         return;
       }
     } else {
       if (!currentHolding || tradeAmount > currentHolding.amount) {
-        alert('Insufficient token balance');
+        alert(`Insufficient token balance. You need ${tradeAmount} ${token.symbol} but only have ${currentHolding?.amount || 0}`);
         return;
       }
     }
@@ -64,6 +84,7 @@ const TokenTradePage = () => {
     setIsLoading(true);
 
     try {
+      console.log('Executing trade...');
       const result = await executeTrade(
         tokenAddress!,
         token.symbol,
@@ -76,14 +97,18 @@ const TokenTradePage = () => {
       );
 
       if (result.error) {
-        alert(result.error);
+        console.error('Trade execution error:', result.error);
+        alert(`Trade failed: ${result.error}`);
       } else {
-        alert(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${token.symbol}!`);
+        console.log('Trade successful:', result.data);
+        alert(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${token.symbol} successfully!`);
         setAmount('');
+        // Refresh data to get updated balances
+        await refreshData();
       }
     } catch (error) {
       console.error('Trade error:', error);
-      alert('Trade failed');
+      alert('Trade failed due to an unexpected error');
     } finally {
       setIsLoading(false);
     }
@@ -130,10 +155,10 @@ const TokenTradePage = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {profile?.username && (
+          {authProfile?.username && (
             <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
               <User className="w-4 h-4 text-white" />
-              <span className="text-white text-sm font-medium">{profile.username}</span>
+              <span className="text-white text-sm font-medium">{authProfile.username}</span>
             </div>
           )}
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl backdrop-blur-sm">
@@ -323,7 +348,7 @@ const TokenTradePage = () => {
                 {/* Trade Button */}
                 <Button
                   onClick={handleTrade}
-                  disabled={!amount || isLoading || !isConnected}
+                  disabled={!amount || isLoading || !isConnected || !supabaseProfile}
                   className={`w-full py-6 text-lg font-semibold rounded-lg transition-all ${
                     tradeType === 'buy'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
@@ -340,10 +365,10 @@ const TokenTradePage = () => {
                   )}
                 </Button>
 
-                {/* Balance Info */}
+                {/* Balance Info - Now synced with portfolio */}
                 <div className="text-center text-sm text-gray-600">
                   Available: {tradeType === 'buy' 
-                    ? `${baseBalance.toFixed(2)} USDC` 
+                    ? `${baseBalance.toFixed(4)} USDC` 
                     : `${currentHolding?.amount.toFixed(6) || '0'} ${token.symbol}`
                   }
                 </div>
