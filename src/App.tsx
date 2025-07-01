@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,7 @@ import TradingApp from "./pages/TradingApp";
 import Portfolio from "./pages/Portfolio";
 import DemoWallet from "./pages/DemoWallet";
 import TokenTradePage from "./pages/TokenTradePage";
+import Trades from "./pages/Trades";
 import NotFound from "./pages/NotFound";
 import PNLPage from "./pages/PNL";
 import TasksPage from "./pages/Bounties";
@@ -28,6 +30,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/trade" element={<TradingApp />} />
+              <Route path="/trades" element={<Trades />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/wallet" element={<Portfolio />} />
               <Route path="/demowallet" element={<DemoWallet />} />
