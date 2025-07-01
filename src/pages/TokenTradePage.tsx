@@ -24,11 +24,12 @@ const TokenTradePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
-  // Use supabaseProfile for balance (this is the correct, synced data)
+  // Get current holding and balance - use supabaseProfile as the source of truth
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
-  const baseBalance = supabaseProfile?.base_balance || 0;
+  const availableBalance = supabaseProfile?.base_balance || 0;
 
-  console.log('TokenTradePage - Current balance:', baseBalance);
+  console.log('TokenTradePage - Available balance:', availableBalance);
+  console.log('TokenTradePage - Supabase profile:', supabaseProfile);
   console.log('TokenTradePage - Current holding:', currentHolding);
 
   useEffect(() => {
@@ -65,13 +66,13 @@ const TokenTradePage = () => {
       tradeAmount,
       pricePerToken: token.priceInBase,
       totalCost,
-      currentBalance: baseBalance,
+      currentBalance: availableBalance,
       currentHolding: currentHolding?.amount || 0
     });
 
     if (tradeType === 'buy') {
-      if (totalCost > baseBalance) {
-        alert(`Insufficient USDC balance. You need ${totalCost.toFixed(4)} USDC but only have ${baseBalance.toFixed(4)} USDC`);
+      if (totalCost > availableBalance) {
+        alert(`Insufficient USDC balance. You need ${totalCost.toFixed(4)} USDC but only have ${availableBalance.toFixed(4)} USDC`);
         return;
       }
     } else {
@@ -163,7 +164,7 @@ const TokenTradePage = () => {
           )}
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl backdrop-blur-sm">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-white text-sm font-medium">{baseBalance.toFixed(2)} USDC</span>
+            <span className="text-white text-sm font-medium">{availableBalance.toFixed(2)} USDC</span>
           </div>
           <div className="bg-white/10 rounded-xl backdrop-blur-sm overflow-hidden">
             <ConnectButton />
@@ -365,10 +366,10 @@ const TokenTradePage = () => {
                   )}
                 </Button>
 
-                {/* Balance Info - Now synced with portfolio */}
+                {/* Balance Info - Now properly synced with portfolio */}
                 <div className="text-center text-sm text-gray-600">
                   Available: {tradeType === 'buy' 
-                    ? `${baseBalance.toFixed(4)} USDC` 
+                    ? `${availableBalance.toFixed(4)} USDC` 
                     : `${currentHolding?.amount.toFixed(6) || '0'} ${token.symbol}`
                   }
                 </div>
