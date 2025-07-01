@@ -17,19 +17,19 @@ const TokenTradePage = () => {
   const { isConnected } = useAccount();
   const { user, profile: authProfile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
-  const { profile: supabaseProfile, holdings, executeTrade, refreshData } = useSupabaseData();
+  const { profile, holdings, executeTrade, refreshData } = useSupabaseData();
   
   const [token, setToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
-  // Get current holding and balance - use supabaseProfile as the source of truth
+  // Get current holding and balance - profile is the single source of truth
   const currentHolding = holdings.find(h => h.token_address === tokenAddress);
-  const availableBalance = supabaseProfile?.base_balance || 0;
+  const availableBalance = profile?.base_balance || 0;
 
   console.log('TokenTradePage - Available balance:', availableBalance);
-  console.log('TokenTradePage - Supabase profile:', supabaseProfile);
+  console.log('TokenTradePage - Profile:', profile);
   console.log('TokenTradePage - Current holding:', currentHolding);
 
   useEffect(() => {
@@ -49,8 +49,8 @@ const TokenTradePage = () => {
   }, [tokenAddress, basePrice.usd]);
 
   const handleTrade = async () => {
-    if (!token || !amount || !supabaseProfile) {
-      console.log('Missing required data for trade:', { token: !!token, amount, profile: !!supabaseProfile });
+    if (!token || !amount || !profile) {
+      console.log('Missing required data for trade:', { token: !!token, amount, profile: !!profile });
       return;
     }
 
@@ -349,7 +349,7 @@ const TokenTradePage = () => {
                 {/* Trade Button */}
                 <Button
                   onClick={handleTrade}
-                  disabled={!amount || isLoading || !isConnected || !supabaseProfile}
+                  disabled={!amount || isLoading || !isConnected || !profile}
                   className={`w-full py-6 text-lg font-semibold rounded-lg transition-all ${
                     tradeType === 'buy'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
@@ -366,7 +366,7 @@ const TokenTradePage = () => {
                   )}
                 </Button>
 
-                {/* Balance Info - Now properly synced with portfolio */}
+                {/* Balance Info - Now synced with portfolio */}
                 <div className="text-center text-sm text-gray-600">
                   Available: {tradeType === 'buy' 
                     ? `${availableBalance.toFixed(4)} USDC` 
