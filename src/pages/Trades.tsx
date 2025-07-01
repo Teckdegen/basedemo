@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +16,7 @@ const TradesPage = () => {
   const { isConnected } = useAccount();
   const { user, profile: authProfile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
-  const { profile, holdings, executeTrade, refreshData } = useSupabaseData();
+  const { profile, holdings, executeTrade, refreshData, loading } = useSupabaseData();
   const { toast } = useToast();
   
   const [selectedToken, setSelectedToken] = useState<any>(null);
@@ -28,17 +27,26 @@ const TradesPage = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Get available balance from profile
+  // Get available balance from profile - ensure it's properly loaded
   const availableBalance = profile?.base_balance || 0;
 
-  // Convert holdings to displayable tokens
+  console.log('Trades page data:', {
+    user: !!user,
+    profile,
+    holdings: holdings.length,
+    availableBalance,
+    loading
+  });
+
+  // Convert holdings to displayable tokens with current prices
   const portfolioTokens = holdings.map(holding => ({
     address: holding.token_address,
     symbol: holding.token_symbol,
     name: holding.token_name,
-    price: holding.average_buy_price * basePrice.usd, // Convert to USD
+    price: holding.average_buy_price * basePrice.usd, // Convert to USD using current BASE price
     holding: holding.amount,
-    totalValue: holding.total_invested * basePrice.usd
+    totalValue: holding.total_invested * basePrice.usd,
+    priceChange24h: 0 // We don't have 24h data for portfolio tokens
   }));
 
   // Handle token search
@@ -136,7 +144,7 @@ const TradesPage = () => {
       if (totalCost > availableBalance) {
         toast({
           title: "Insufficient balance",
-          description: `You need ${totalCost.toFixed(4)} USDC but only have ${availableBalance.toFixed(4)} USDC`,
+          description: `You need ${totalCost.toFixed(4)} BASE but only have ${availableBalance.toFixed(4)} BASE`,
           variant: "destructive"
         });
         return;
@@ -155,7 +163,7 @@ const TradesPage = () => {
     setIsLoading(true);
 
     try {
-      console.log('Executing trade...');
+      console.log('Executing trade via Supabase...');
       const result = await executeTrade(
         selectedToken.address,
         selectedToken.symbol,
@@ -182,7 +190,7 @@ const TradesPage = () => {
         });
         setAmount('');
         setSelectedToken(null);
-        await refreshData();
+        // Data will refresh automatically due to the executeTrade function
       }
     } catch (error) {
       console.error('Trade error:', error);
@@ -195,6 +203,32 @@ const TradesPage = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen" style={{ background: '#6366f1' }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-white text-xl">Loading your portfolio...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if not connected or no user
+  if (!isConnected || !user) {
+    return (
+      <div className="min-h-screen" style={{ background: '#6366f1' }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center text-white">
+            <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+            <p className="mb-6">Please connect your wallet to access trading</p>
+            <ConnectButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: '#6366f1' }}>
@@ -235,7 +269,7 @@ const TradesPage = () => {
           )}
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl backdrop-blur-sm">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-white text-sm font-medium">{availableBalance.toFixed(2)} USDC</span>
+            <span className="text-white text-sm font-medium">{availableBalance.toFixed(2)} BASE</span>
           </div>
           <div className="bg-white/10 rounded-xl backdrop-blur-sm overflow-hidden">
             <ConnectButton />
@@ -345,7 +379,7 @@ const TradesPage = () => {
                 <CardHeader>
                   <CardTitle className="text-gray-800 flex items-center gap-2">
                     <Activity className="w-5 h-5" />
-                    Your Holdings
+                    Your Holdings ({holdings.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -358,7 +392,7 @@ const TradesPage = () => {
                             <div className="text-sm text-gray-600">{holding.amount.toFixed(6)}</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm text-gray-600">Avg: ${holding.average_buy_price.toFixed(6)}</div>
+                            <div className="text-sm text-gray-600">Avg: {holding.average_buy_price.toFixed(6)} BASE</div>
                             <div className="text-sm text-gray-600">
                               Total: ${(holding.total_invested * basePrice.usd).toFixed(2)}
                             </div>
@@ -460,7 +494,7 @@ const TradesPage = () => {
                         <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
                           <span className="text-gray-600">Total:</span>
                           <span className="font-bold text-gray-800">
-                            ${(parseFloat(amount || '0') * selectedToken.price / basePrice.usd).toFixed(2)} USDC
+                            {(parseFloat(amount || '0') * selectedToken.price / basePrice.usd).toFixed(4)} BASE
                           </span>
                         </div>
                       </div>
@@ -489,7 +523,7 @@ const TradesPage = () => {
                     {/* Balance Info */}
                     <div className="text-center text-sm text-gray-600">
                       Available: {tradeType === 'buy' 
-                        ? `${availableBalance.toFixed(4)} USDC` 
+                        ? `${availableBalance.toFixed(4)} BASE` 
                         : `${holdings.find(h => h.token_address === selectedToken.address)?.amount.toFixed(6) || '0'} ${selectedToken.symbol}`
                       }
                     </div>
