@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -9,6 +9,8 @@ import { ArrowLeft, TrendingUp, TrendingDown, Activity, DollarSign, User, Search
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useBasePrice } from '@/hooks/useBasePrice';
+import { searchTokenByAddress } from '@/services/dexScreenerService';
+import { useToast } from '@/hooks/use-toast';
 
 const TradesPage = () => {
   const navigate = useNavigate();
@@ -16,28 +18,90 @@ const TradesPage = () => {
   const { user, profile: authProfile } = useAuth();
   const { priceData: basePrice } = useBasePrice();
   const { profile, holdings, executeTrade, refreshData } = useSupabaseData();
+  const { toast } = useToast();
   
   const [selectedToken, setSelectedToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [tokenSearch, setTokenSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Get available balance from portfolio
+  // Get available balance from profile
   const availableBalance = profile?.base_balance || 0;
 
-  // Mock token list for demonstration
-  const mockTokens = [
-    { address: '0x1', symbol: 'WETH', name: 'Wrapped Ethereum', price: 3200 },
-    { address: '0x2', symbol: 'USDT', name: 'Tether USD', price: 1 },
-    { address: '0x3', symbol: 'BTC', name: 'Bitcoin', price: 45000 },
-    { address: '0x4', symbol: 'LINK', name: 'Chainlink', price: 15 },
-  ];
+  // Convert holdings to displayable tokens
+  const portfolioTokens = holdings.map(holding => ({
+    address: holding.token_address,
+    symbol: holding.token_symbol,
+    name: holding.token_name,
+    price: holding.average_buy_price * basePrice.usd, // Convert to USD
+    holding: holding.amount,
+    totalValue: holding.total_invested * basePrice.usd
+  }));
 
-  const filteredTokens = mockTokens.filter(token => 
-    token.symbol.toLowerCase().includes(tokenSearch.toLowerCase()) ||
-    token.name.toLowerCase().includes(tokenSearch.toLowerCase())
-  );
+  // Handle token search
+  const handleSearch = async () => {
+    if (!tokenSearch.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Check if it's a contract address (starts with 0x and is 42 characters)
+    if (tokenSearch.startsWith('0x') && tokenSearch.length === 42) {
+      setIsSearching(true);
+      try {
+        const tokenData = await searchTokenByAddress(tokenSearch.trim());
+        if (tokenData) {
+          setSearchResults([{
+            address: tokenData.address,
+            symbol: tokenData.symbol,
+            name: tokenData.name,
+            price: tokenData.price,
+            priceChange24h: tokenData.priceChange24h,
+            marketCap: tokenData.marketCap,
+            dex: tokenData.dex
+          }]);
+        } else {
+          setSearchResults([]);
+          toast({
+            title: "Token not found",
+            description: "Could not find token data for this address",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error searching token:', error);
+        setSearchResults([]);
+        toast({
+          title: "Search failed",
+          description: "Failed to search for token",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    } else {
+      // Filter portfolio tokens by search term
+      const filtered = portfolioTokens.filter(token => 
+        token.symbol.toLowerCase().includes(tokenSearch.toLowerCase()) ||
+        token.name.toLowerCase().includes(tokenSearch.toLowerCase())
+      );
+      setSearchResults(filtered);
+    }
+  };
+
+  // Run search when tokenSearch changes
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      handleSearch();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [tokenSearch]);
+
+  const tokensToDisplay = tokenSearch ? searchResults : portfolioTokens;
 
   const handleTrade = async () => {
     if (!selectedToken || !amount || !profile) {
@@ -47,7 +111,11 @@ const TradesPage = () => {
 
     const tradeAmount = parseFloat(amount);
     if (isNaN(tradeAmount) || tradeAmount <= 0) {
-      alert('Please enter a valid amount');
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -66,12 +134,20 @@ const TradesPage = () => {
 
     if (tradeType === 'buy') {
       if (totalCost > availableBalance) {
-        alert(`Insufficient USDC balance. You need ${totalCost.toFixed(4)} USDC but only have ${availableBalance.toFixed(4)} USDC`);
+        toast({
+          title: "Insufficient balance",
+          description: `You need ${totalCost.toFixed(4)} USDC but only have ${availableBalance.toFixed(4)} USDC`,
+          variant: "destructive"
+        });
         return;
       }
     } else {
       if (!currentHolding || tradeAmount > currentHolding.amount) {
-        alert(`Insufficient token balance. You need ${tradeAmount} ${selectedToken.symbol} but only have ${currentHolding?.amount || 0}`);
+        toast({
+          title: "Insufficient tokens",
+          description: `You need ${tradeAmount} ${selectedToken.symbol} but only have ${currentHolding?.amount || 0}`,
+          variant: "destructive"
+        });
         return;
       }
     }
@@ -93,17 +169,28 @@ const TradesPage = () => {
 
       if (result.error) {
         console.error('Trade execution error:', result.error);
-        alert(`Trade failed: ${result.error}`);
+        toast({
+          title: "Trade failed",
+          description: result.error,
+          variant: "destructive"
+        });
       } else {
         console.log('Trade successful:', result.data);
-        alert(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${selectedToken.symbol} successfully!`);
+        toast({
+          title: "Trade successful",
+          description: `${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeAmount} ${selectedToken.symbol} successfully!`
+        });
         setAmount('');
         setSelectedToken(null);
         await refreshData();
       }
     } catch (error) {
       console.error('Trade error:', error);
-      alert('Trade failed due to an unexpected error');
+      toast({
+        title: "Trade failed",
+        description: "Trade failed due to an unexpected error",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -173,46 +260,79 @@ const TradesPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search tokens..."
+                  placeholder="Search portfolio tokens or paste contract address (0x...)"
                   value={tokenSearch}
                   onChange={(e) => setTokenSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
 
               {/* Token List */}
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredTokens.map((token) => (
-                  <div
-                    key={token.address}
-                    onClick={() => setSelectedToken(token)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      selectedToken?.address === token.address
-                        ? 'bg-blue-50 border-blue-500 shadow-md'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">
-                            {token.symbol.slice(0, 2)}
-                          </span>
+                {tokensToDisplay.length > 0 ? (
+                  tokensToDisplay.map((token) => (
+                    <div
+                      key={token.address}
+                      onClick={() => setSelectedToken(token)}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        selectedToken?.address === token.address
+                          ? 'bg-blue-50 border-blue-500 shadow-md'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {token.symbol.slice(0, 2)}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800">{token.name}</div>
+                            <div className="text-sm text-gray-600">{token.symbol}</div>
+                            {token.holding && (
+                              <div className="text-xs text-blue-600">Holdings: {token.holding.toFixed(6)}</div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold text-gray-800">{token.name}</div>
-                          <div className="text-sm text-gray-600">{token.symbol}</div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-800">
+                            ${token.price.toLocaleString()}
+                          </div>
+                          {token.priceChange24h !== undefined && (
+                            <div className={`text-sm ${token.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {token.priceChange24h >= 0 ? '+' : ''}{token.priceChange24h.toFixed(2)}%
+                            </div>
+                          )}
+                          {token.totalValue && (
+                            <div className="text-xs text-gray-500">
+                              Value: ${token.totalValue.toFixed(2)}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-800">
-                          ${token.price.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-green-600">+2.5%</div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-500">
+                      {tokenSearch ? (
+                        tokenSearch.startsWith('0x') ? 
+                          'Searching for token...' : 
+                          'No tokens found in portfolio'
+                      ) : (
+                        portfolioTokens.length === 0 ? 
+                          'No tokens in portfolio. Buy some tokens first!' :
+                          'Your portfolio tokens will appear here'
+                      )}
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -279,7 +399,11 @@ const TradesPage = () => {
                           <div className="text-xl font-bold text-gray-800">
                             ${selectedToken.price.toLocaleString()}
                           </div>
-                          <div className="text-sm text-green-600">+2.5% (24h)</div>
+                          {selectedToken.priceChange24h !== undefined && (
+                            <div className={`text-sm ${selectedToken.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {selectedToken.priceChange24h >= 0 ? '+' : ''}{selectedToken.priceChange24h.toFixed(2)}% (24h)
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -374,7 +498,7 @@ const TradesPage = () => {
                   <div className="text-center py-12">
                     <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">Select a Token</h3>
-                    <p className="text-gray-600">Choose a token from the list to start trading</p>
+                    <p className="text-gray-600">Choose a token from your portfolio or search for new tokens</p>
                   </div>
                 )}
               </CardContent>
