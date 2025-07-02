@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 const TradesPage = () => {
   const navigate = useNavigate();
   const { isConnected } = useAccount();
-  const { user, profile: authProfile } = useAuth();
+  const { user, profile: authProfile, loading: authLoading, authenticateWithWallet } = useAuth();
   const { priceData: basePrice } = useBasePrice();
   const { profile, holdings, executeTrade, refreshData, loading } = useSupabaseData();
   const { toast } = useToast();
@@ -27,26 +28,36 @@ const TradesPage = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Get available balance from profile - ensure it's properly loaded
+  // Get available balance from profile
   const availableBalance = profile?.base_balance || 0;
 
   console.log('Trades page data:', {
+    isConnected,
     user: !!user,
     profile,
     holdings: holdings.length,
     availableBalance,
-    loading
+    loading,
+    authLoading
   });
+
+  // Auto-authenticate if wallet is connected but user is not authenticated
+  useEffect(() => {
+    if (isConnected && !user && !authLoading) {
+      console.log('Wallet connected but not authenticated, attempting authentication...');
+      authenticateWithWallet();
+    }
+  }, [isConnected, user, authLoading, authenticateWithWallet]);
 
   // Convert holdings to displayable tokens with current prices
   const portfolioTokens = holdings.map(holding => ({
     address: holding.token_address,
     symbol: holding.token_symbol,
     name: holding.token_name,
-    price: holding.average_buy_price * basePrice.usd, // Convert to USD using current BASE price
+    price: holding.average_buy_price * basePrice.usd,
     holding: holding.amount,
     totalValue: holding.total_invested * basePrice.usd,
-    priceChange24h: 0 // We don't have 24h data for portfolio tokens
+    priceChange24h: 0
   }));
 
   // Handle token search
@@ -56,7 +67,6 @@ const TradesPage = () => {
       return;
     }
 
-    // Check if it's a contract address (starts with 0x and is 42 characters)
     if (tokenSearch.startsWith('0x') && tokenSearch.length === 42) {
       setIsSearching(true);
       try {
@@ -91,7 +101,6 @@ const TradesPage = () => {
         setIsSearching(false);
       }
     } else {
-      // Filter portfolio tokens by search term
       const filtered = portfolioTokens.filter(token => 
         token.symbol.toLowerCase().includes(tokenSearch.toLowerCase()) ||
         token.name.toLowerCase().includes(tokenSearch.toLowerCase())
@@ -100,7 +109,6 @@ const TradesPage = () => {
     }
   };
 
-  // Run search when tokenSearch changes
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       handleSearch();
@@ -190,7 +198,6 @@ const TradesPage = () => {
         });
         setAmount('');
         setSelectedToken(null);
-        // Data will refresh automatically due to the executeTrade function
       }
     } catch (error) {
       console.error('Trade error:', error);
@@ -205,11 +212,13 @@ const TradesPage = () => {
   };
 
   // Show loading state
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-white text-xl">Loading your portfolio...</div>
+          <div className="text-white text-xl">
+            {authLoading ? 'Authenticating...' : 'Loading your portfolio...'}
+          </div>
         </div>
       </div>
     );
@@ -224,6 +233,9 @@ const TradesPage = () => {
             <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
             <p className="mb-6">Please connect your wallet to access trading</p>
             <ConnectButton />
+            {isConnected && !user && (
+              <p className="mt-4 text-blue-200">Authenticating your wallet...</p>
+            )}
           </div>
         </div>
       </div>

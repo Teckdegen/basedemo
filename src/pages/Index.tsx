@@ -9,13 +9,22 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { isConnected } = useAccount();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleStartTrading = () => {
     console.log('Start Trading clicked, navigating to trade page');
-    navigate('/trade');
+    navigate('/trades');
   };
+
+  // Show loading while auth is being processed
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#6366f1' }}>
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{
@@ -53,43 +62,48 @@ const Index = () => {
           </p>
           
           <div className="flex justify-center mb-12">
-            <ConnectButton.Custom>
-              {({ account, chain, openConnectModal, mounted }) => {
-                const ready = mounted;
-                const connected = ready && account && chain;
+            {isConnected && user ? (
+              <Button
+                onClick={handleStartTrading}
+                size="lg"
+                className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
+              >
+                Start Trading
+              </Button>
+            ) : (
+              <div className="text-center">
+                <ConnectButton.Custom>
+                  {({ account, chain, openConnectModal, mounted }) => {
+                    const ready = mounted;
+                    const connected = ready && account && chain;
 
-                return (
-                  <div
-                    {...(!ready && {
-                      'aria-hidden': true,
-                      style: {
-                        opacity: 0,
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                      },
-                    })}
-                  >
-                    {!connected ? (
-                      <Button
-                        onClick={openConnectModal}
-                        size="lg"
-                        className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
+                    return (
+                      <div
+                        {...(!ready && {
+                          'aria-hidden': true,
+                          style: {
+                            opacity: 0,
+                            pointerEvents: 'none',
+                            userSelect: 'none',
+                          },
+                        })}
                       >
-                        Connect Wallet to Start Trading
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleStartTrading}
-                        size="lg"
-                        className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
-                      >
-                        Start Trading
-                      </Button>
-                    )}
-                  </div>
-                );
-              }}
-            </ConnectButton.Custom>
+                        <Button
+                          onClick={openConnectModal}
+                          size="lg"
+                          className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
+                        >
+                          {connected ? 'Authenticating...' : 'Connect Wallet to Start Trading'}
+                        </Button>
+                      </div>
+                    );
+                  }}
+                </ConnectButton.Custom>
+                {isConnected && !user && (
+                  <p className="text-blue-200 mt-4">Authenticating your wallet...</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
