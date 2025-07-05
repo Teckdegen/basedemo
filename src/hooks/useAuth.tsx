@@ -41,18 +41,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       console.log('Starting wallet authentication for:', address);
+      setLoading(true);
       
       // First, try anonymous sign in
       const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
       
       if (authError) {
         console.error('Anonymous auth error:', authError);
+        setLoading(false);
         return;
       }
 
       console.log('Anonymous auth successful:', authData.user?.id);
     } catch (error) {
       console.error('Error in wallet authentication:', error);
+      setLoading(false);
     }
   };
 
@@ -73,15 +76,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
         
         if (session?.user && address) {
           // Use setTimeout to avoid callback deadlock
           setTimeout(() => {
-            refreshProfile();
-          }, 0);
+            refreshProfile().finally(() => {
+              setLoading(false);
+            });
+          }, 100);
         } else {
           setProfile(null);
+          setLoading(false);
         }
       }
     );
@@ -91,9 +96,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Existing session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      
       if (session?.user && address) {
-        refreshProfile();
+        refreshProfile().finally(() => {
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
     });
 
@@ -199,6 +208,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setLoading(false);
   };
 
   return (

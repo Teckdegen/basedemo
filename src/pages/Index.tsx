@@ -18,10 +18,10 @@ const Index = () => {
   };
 
   // Show loading while auth is being processed
-  if (loading) {
+  if (loading && isConnected) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#6366f1' }}>
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-white text-xl">Loading your account...</div>
       </div>
     );
   }
@@ -93,15 +93,12 @@ const Index = () => {
                           size="lg"
                           className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
                         >
-                          {connected ? 'Setting up your account...' : 'Connect Wallet to Start Trading'}
+                          {connected ? 'Connect Wallet to Start Trading' : 'Connect Wallet to Start Trading'}
                         </Button>
                       </div>
                     );
                   }}
                 </ConnectButton.Custom>
-                {isConnected && !profile && (
-                  <p className="text-blue-200 mt-4">Setting up your trading account...</p>
-                )}
               </div>
             )}
           </div>

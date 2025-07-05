@@ -203,12 +203,12 @@ const TradesPage = () => {
   };
 
   // Show loading state
-  if (loading || authLoading) {
+  if (authLoading && isConnected) {
     return (
       <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">
-            {authLoading ? 'Setting up your account...' : 'Loading your portfolio...'}
+            Loading your account...
           </div>
         </div>
       </div>
@@ -224,9 +224,6 @@ const TradesPage = () => {
             <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
             <p className="mb-6">Please connect your wallet to access trading</p>
             <ConnectButton />
-            {isConnected && !profile && (
-              <p className="mt-4 text-blue-200">Setting up your trading account...</p>
-            )}
           </div>
         </div>
       </div>
@@ -374,7 +371,7 @@ const TradesPage = () => {
             </CardContent>
           </Card>
 
-          {/* Right Column - Trading Interface */}
+          {/* Right Column - Trading Interface and Holdings */}
           <div className="space-y-6">
             {/* Current Holdings */}
             {holdings.length > 0 && (
