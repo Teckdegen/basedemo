@@ -32,44 +32,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { address, isConnected } = useAccount();
 
-  // Authenticate with wallet when wallet connects
+  // Authenticate with wallet using anonymous auth + wallet verification
   const authenticateWithWallet = async () => {
-    if (!address) return;
+    if (!address) {
+      console.error('No wallet address available');
+      return;
+    }
 
     try {
-      // Sign in with wallet address as email (creating a unique identifier)
-      const walletEmail = `${address.toLowerCase()}@wallet.local`;
+      console.log('Starting wallet authentication for:', address);
       
-      // Try to sign in first
-      let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: walletEmail,
-        password: address.toLowerCase(), // Use address as password
-      });
-
-      // If sign in fails, try to sign up
-      if (signInError) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: walletEmail,
-          password: address.toLowerCase(),
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              wallet_address: address
-            }
-          }
-        });
-
-        if (signUpError) {
-          console.error('Error signing up with wallet:', signUpError);
-          return;
-        }
-
-        console.log('Wallet authenticated via signup:', signUpData);
-      } else {
-        console.log('Wallet authenticated via signin:', signInData);
+      // First, try anonymous sign in
+      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      
+      if (authError) {
+        console.error('Anonymous auth error:', authError);
+        return;
       }
+
+      console.log('Anonymous auth successful:', authData.user?.id);
     } catch (error) {
-      console.error('Error authenticating with wallet:', error);
+      console.error('Error in wallet authentication:', error);
     }
   };
 
@@ -92,7 +75,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        if (session?.user) {
+        if (session?.user && address) {
+          // Use setTimeout to avoid callback deadlock
           setTimeout(() => {
             refreshProfile();
           }, 0);
@@ -108,65 +92,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) {
+      if (session?.user && address) {
         refreshProfile();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [address]);
 
   const refreshProfile = async () => {
-    if (!user) {
-      console.log('No user to refresh profile for');
+    if (!user || !address) {
+      console.log('No user or address to refresh profile for');
       return;
     }
-    console.log('Refreshing profile for user:', user.id);
+    console.log('Refreshing profile for user:', user.id, 'wallet:', address);
     
     try {
+      // First, try to find existing profile by wallet address
       let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('wallet_address', address)
         .maybeSingle();
 
       if (!profileData && !profileError) {
-        console.log('No profile found, creating new profile for user:', user.id);
+        console.log('No profile found for wallet, creating new profile');
         
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: user.id,
             base_balance: 1500.0,
-            wallet_address: address || null
+            wallet_address: address
           })
           .select()
           .single();
 
         if (insertError) {
           console.error('Error creating profile:', insertError);
+          // If profile already exists for this user ID, try to update it
           if (insertError.code === '23505') {
-            const { data: retryProfile, error: retryError } = await supabase
+            const { data: updatedProfile, error: updateError } = await supabase
               .from('profiles')
-              .select('*')
+              .update({ wallet_address: address })
               .eq('id', user.id)
-              .maybeSingle();
+              .select()
+              .single();
             
-            if (retryProfile && !retryError) {
-              profileData = retryProfile;
+            if (!updateError && updatedProfile) {
+              profileData = updatedProfile;
             }
           }
         } else {
           profileData = newProfile;
         }
-      }
-
-      // Update wallet address if it's changed
-      if (profileData && address && profileData.wallet_address !== address) {
+      } else if (profileData && profileData.id !== user.id) {
+        // Profile exists but with different user ID, update it
         const { data: updatedProfile, error: updateError } = await supabase
           .from('profiles')
-          .update({ wallet_address: address })
-          .eq('id', user.id)
+          .update({ id: user.id })
+          .eq('wallet_address', address)
           .select()
           .single();
 

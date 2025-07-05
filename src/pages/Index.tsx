@@ -9,11 +9,11 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { isConnected } = useAccount();
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleStartTrading = () => {
-    console.log('Start Trading clicked, navigating to trade page');
+    console.log('Start Trading clicked, navigating to trades page');
     navigate('/trades');
   };
 
@@ -62,7 +62,7 @@ const Index = () => {
           </p>
           
           <div className="flex justify-center mb-12">
-            {isConnected && user ? (
+            {isConnected && user && profile ? (
               <Button
                 onClick={handleStartTrading}
                 size="lg"
@@ -93,14 +93,14 @@ const Index = () => {
                           size="lg"
                           className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold transition-all shadow-xl hover:shadow-2xl rounded-2xl"
                         >
-                          {connected ? 'Authenticating...' : 'Connect Wallet to Start Trading'}
+                          {connected ? 'Setting up your account...' : 'Connect Wallet to Start Trading'}
                         </Button>
                       </div>
                     );
                   }}
                 </ConnectButton.Custom>
-                {isConnected && !user && (
-                  <p className="text-blue-200 mt-4">Authenticating your wallet...</p>
+                {isConnected && !profile && (
+                  <p className="text-blue-200 mt-4">Setting up your trading account...</p>
                 )}
               </div>
             )}

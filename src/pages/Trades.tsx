@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 const TradesPage = () => {
   const navigate = useNavigate();
   const { isConnected } = useAccount();
-  const { user, profile: authProfile, loading: authLoading, authenticateWithWallet } = useAuth();
+  const { user, profile: authProfile, loading: authLoading } = useAuth();
   const { priceData: basePrice } = useBasePrice();
   const { profile, holdings, executeTrade, refreshData, loading } = useSupabaseData();
   const { toast } = useToast();
@@ -40,14 +39,6 @@ const TradesPage = () => {
     loading,
     authLoading
   });
-
-  // Auto-authenticate if wallet is connected but user is not authenticated
-  useEffect(() => {
-    if (isConnected && !user && !authLoading) {
-      console.log('Wallet connected but not authenticated, attempting authentication...');
-      authenticateWithWallet();
-    }
-  }, [isConnected, user, authLoading, authenticateWithWallet]);
 
   // Convert holdings to displayable tokens with current prices
   const portfolioTokens = holdings.map(holding => ({
@@ -217,7 +208,7 @@ const TradesPage = () => {
       <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">
-            {authLoading ? 'Authenticating...' : 'Loading your portfolio...'}
+            {authLoading ? 'Setting up your account...' : 'Loading your portfolio...'}
           </div>
         </div>
       </div>
@@ -225,7 +216,7 @@ const TradesPage = () => {
   }
 
   // Show message if not connected or no user
-  if (!isConnected || !user) {
+  if (!isConnected || !user || !profile) {
     return (
       <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
@@ -233,8 +224,8 @@ const TradesPage = () => {
             <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
             <p className="mb-6">Please connect your wallet to access trading</p>
             <ConnectButton />
-            {isConnected && !user && (
-              <p className="mt-4 text-blue-200">Authenticating your wallet...</p>
+            {isConnected && !profile && (
+              <p className="mt-4 text-blue-200">Setting up your trading account...</p>
             )}
           </div>
         </div>
