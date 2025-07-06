@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { isConnected } = useAccount();
-  const { user, profile, loading } = useAuth();
+  const { profile, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleStartTrading = () => {
@@ -62,7 +62,7 @@ const Index = () => {
           </p>
           
           <div className="flex justify-center mb-12">
-            {isConnected && user && profile ? (
+            {isConnected && profile ? (
               <Button
                 onClick={handleStartTrading}
                 size="lg"
