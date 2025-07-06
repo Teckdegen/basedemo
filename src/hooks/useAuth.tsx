@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { address, isConnected } = useAccount();
 
-  // Authenticate with wallet using anonymous auth + wallet verification
+  // Simple wallet authentication using profiles table directly
   const authenticateWithWallet = async () => {
     if (!address) {
       console.error('No wallet address available');
@@ -43,16 +43,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Starting wallet authentication for:', address);
       setLoading(true);
       
-      // First, try anonymous sign in
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      // Create a mock user object using wallet address
+      const mockUser = {
+        id: address.toLowerCase(),
+        wallet_address: address
+      };
       
-      if (authError) {
-        console.error('Anonymous auth error:', authError);
-        setLoading(false);
-        return;
-      }
+      const mockSession = {
+        user: mockUser,
+        access_token: 'wallet_auth_token'
+      };
 
-      console.log('Anonymous auth successful:', authData.user?.id);
+      setUser(mockUser);
+      setSession(mockSession);
+      
+      console.log('Wallet auth successful for:', address);
+      
+      // Load/create profile
+      await refreshProfile();
     } catch (error) {
       console.error('Error in wallet authentication:', error);
       setLoading(false);
@@ -64,60 +72,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (isConnected && address && !user) {
       console.log('Wallet connected, authenticating...', address);
       authenticateWithWallet();
+    } else if (!isConnected) {
+      console.log('Wallet disconnected, clearing auth state');
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setLoading(false);
     }
-  }, [isConnected, address, user]);
-
-  useEffect(() => {
-    console.log('AuthProvider: Setting up auth state listener');
-    
-    // Auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user && address) {
-          // Use setTimeout to avoid callback deadlock
-          setTimeout(() => {
-            refreshProfile().finally(() => {
-              setLoading(false);
-            });
-          }, 100);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Existing session:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user && address) {
-        refreshProfile().finally(() => {
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [address]);
+  }, [isConnected, address]);
 
   const refreshProfile = async () => {
-    if (!user || !address) {
-      console.log('No user or address to refresh profile for');
+    if (!address) {
+      console.log('No wallet address to refresh profile for');
+      setLoading(false);
       return;
     }
-    console.log('Refreshing profile for user:', user.id, 'wallet:', address);
+    
+    console.log('Refreshing profile for wallet:', address);
     
     try {
-      // First, try to find existing profile by wallet address
+      // Try to find existing profile by wallet address
       let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -130,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
-            id: user.id,
+            id: address.toLowerCase(),
             base_balance: 1500.0,
             wallet_address: address
           })
@@ -139,33 +113,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (insertError) {
           console.error('Error creating profile:', insertError);
-          // If profile already exists for this user ID, try to update it
-          if (insertError.code === '23505') {
-            const { data: updatedProfile, error: updateError } = await supabase
-              .from('profiles')
-              .update({ wallet_address: address })
-              .eq('id', user.id)
-              .select()
-              .single();
-            
-            if (!updateError && updatedProfile) {
-              profileData = updatedProfile;
-            }
-          }
         } else {
           profileData = newProfile;
-        }
-      } else if (profileData && profileData.id !== user.id) {
-        // Profile exists but with different user ID, update it
-        const { data: updatedProfile, error: updateError } = await supabase
-          .from('profiles')
-          .update({ id: user.id })
-          .eq('wallet_address', address)
-          .select()
-          .single();
-
-        if (!updateError && updatedProfile) {
-          profileData = updatedProfile;
         }
       }
 
@@ -179,11 +128,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Error in refreshProfile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const setUsername = async (username: string) => {
-    if (!user) return { error: { message: "No user" } };
+    if (!address) return { error: { message: "No wallet connected" } };
     
     const { data: existing } = await supabase
       .from('profiles')
@@ -196,7 +147,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase
       .from('profiles')
       .update({ username })
-      .eq('id', user.id);
+      .eq('wallet_address', address);
     
     await refreshProfile();
     return { error };
@@ -204,7 +155,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     console.log('Signing out user');
-    await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);

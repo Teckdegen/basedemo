@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
@@ -208,7 +209,7 @@ const TradesPage = () => {
       <div className="min-h-screen" style={{ background: '#6366f1' }}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">
-            Loading your account...
+            Setting up your account...
           </div>
         </div>
       </div>
